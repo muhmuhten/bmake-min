@@ -1,3 +1,26 @@
+2004-05-08  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Remove __IDSTRING()
+
+	* Makefile.in (BMAKE_VERSION): bump to 20040508
+	* Merge with NetBSD make, pick up:
+	  o posix fixes
+	    - remove '-e' from compat mode
+	    - add support for '+' command-line prefix.
+	  o fix for handling '--' on command-line.
+	  o fix include in lst.lib/lstInt.h to simplify '-I's
+	  o we also picked up replacement of MAKE_BOOTSTRAP 
+	    with !MAKE_NATIVE which is a noop, but possibly confusing.
+
+2004-04-14  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20040414
+	* Merge with NetBSD make, pick up:
+	  o allow quoted strings on lhs of conditionals
+	  o issue warning when extra .else is seen
+	  o print line numer when errors encountered during parsing from
+	  string.
+
 2004-02-20  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION):  bump to 20040220

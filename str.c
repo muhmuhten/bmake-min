@@ -1,4 +1,4 @@
-/*	$NetBSD: str.c,v 1.21 2003/09/27 21:29:37 sjg Exp $	*/
+/*	$NetBSD: str.c,v 1.22 2004/05/07 00:04:40 ross Exp $	*/
 
 /*-
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -68,21 +68,17 @@
  * SUCH DAMAGE.
  */
 
-#ifdef MAKE_BOOTSTRAP
-static char rcsid[] = "$NetBSD: str.c,v 1.21 2003/09/27 21:29:37 sjg Exp $";
+#ifndef MAKE_NATIVE
+static char rcsid[] = "$NetBSD: str.c,v 1.22 2004/05/07 00:04:40 ross Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char     sccsid[] = "@(#)str.c	5.8 (Berkeley) 6/1/90";
 #else
-__RCSID("$NetBSD: str.c,v 1.21 2003/09/27 21:29:37 sjg Exp $");
+__RCSID("$NetBSD: str.c,v 1.22 2004/05/07 00:04:40 ross Exp $");
 #endif
 #endif				/* not lint */
-#endif
-
-#if !defined(MAKE_BOOTSTRAP) && !defined(lint)
-__IDSTRING(rcs_id,"$Id: str.c,v 1.8 2003/09/28 17:10:09 sjg Exp $");
 #endif
 
 #include "make.h"

@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.98 2004/02/05 23:31:34 ross Exp $	*/
+/*	$NetBSD: main.c,v 1.102 2004/05/07 00:04:38 ross Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -68,8 +68,8 @@
  * SUCH DAMAGE.
  */
 
-#ifdef MAKE_BOOTSTRAP
-static char rcsid[] = "$NetBSD: main.c,v 1.98 2004/02/05 23:31:34 ross Exp $";
+#ifndef MAKE_NATIVE
+static char rcsid[] = "$NetBSD: main.c,v 1.102 2004/05/07 00:04:38 ross Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,13 +81,9 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\n\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.98 2004/02/05 23:31:34 ross Exp $");
+__RCSID("$NetBSD: main.c,v 1.102 2004/05/07 00:04:38 ross Exp $");
 #endif
 #endif /* not lint */
-#endif
-
-#if !defined(MAKE_BOOTSTRAP) && !defined(lint)
-__IDSTRING(rcs_id,"$Id: main.c,v 1.35 2004/02/15 07:11:09 sjg Exp $");
 #endif
 
 /*-
@@ -123,7 +119,7 @@ __IDSTRING(rcs_id,"$Id: main.c,v 1.35 2004/02/15 07:11:09 sjg Exp $");
 #include <sys/resource.h>
 #include <signal.h>
 #include <sys/stat.h>
-#ifndef MAKE_BOOTSTRAP
+#ifdef MAKE_NATIVE
 #include <sys/utsname.h>
 #endif
 #include "wait.h"
@@ -225,7 +221,7 @@ MainParseArgs(int argc, char **argv)
 	char *argvalue;
 	const char *getopt_def;
 	char *optscan;
-	Boolean inOption;
+	Boolean inOption, dashDash = FALSE;
 	char found_path[MAXPATHLEN + 1];	/* for searching for sys.mk */
 
 #ifdef REMOTE
@@ -254,7 +250,7 @@ rearg:
 				continue;
 			}
 		} else {
-			if (c != '-')
+			if (c != '-' || dashDash)
 				break;
 			inOption = TRUE;
 			c = *optscan++;
@@ -267,6 +263,13 @@ rearg:
 			arginc = 1;
 			argvalue = optscan;
 			if(*argvalue == '\0') {
+				if (argc < 3) {
+					(void)fprintf(stderr,
+					    "%s: option requires "
+					    "an argument -- %c\n",
+					    progname, c);
+					usage();
+				}
 				argvalue = argv[2];
 				arginc = 2;
 			}
@@ -486,9 +489,12 @@ rearg:
 			touchFlag = TRUE;
 			Var_Append(MAKEFLAGS, "-t", VAR_GLOBAL);
 			break;
+		case '-':
+			dashDash = TRUE;
+			break;
 		default:
 		case '?':
-#ifdef MAKE_BOOTSTRAP
+#ifndef MAKE_NATIVE
 			fprintf(stderr, "getopt(%s) -> %d (%c)\n",
 				OPTFLAGS, c, c);
 #endif
@@ -511,7 +517,7 @@ rearg:
 		} else {
 			if (!*argv[1])
 				Punt("illegal (null) argument.");
-			if (*argv[1] == '-')
+			if (*argv[1] == '-' && !dashDash)
 				goto rearg;
 			(void)Lst_AtEnd(create, (ClientData)estrdup(argv[1]));
 		}
@@ -718,7 +724,7 @@ main(int argc, char **argv)
 	 * run-time.
 	 */
 	if (!machine) {
-#ifndef MAKE_BOOTSTRAP
+#ifdef MAKE_NATIVE
 	    struct utsname utsname;
 
 	    if (uname(&utsname) == -1) {
@@ -918,7 +924,7 @@ main(int argc, char **argv)
 	/*
 	 * Read in the built-in rules first, followed by the specified
 	 * makefile, if it was (makefile != (char *) NULL), or the default
-	 * Makefile and makefile, in that order, if it wasn't.
+	 * makefile and Makefile, in that order, if it wasn't.
 	 */
 	if (!noBuiltins) {
 		LstNode ln;

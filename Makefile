@@ -1,6 +1,5 @@
 MKPATH ?= mk:../mk:bmake-min/mk
 CFLAGS += '-D_PATH_DEFSYSPATH="$(MKPATH):"_path_defsyspath' -Imissing/links -Imissing '-D__RCSID(s)=int abs()' '-D__COPYRIGHT=__RCSID' -DMAKE_NATIVE -DUSE_META -DHAVE_CONFIG_H
-CFLAGS += '-D__IDSTRING(x,s)=__RCSID(s)'
 CFLAGS += -DHAVE_AR_H
 LDFLAGS += -s
 

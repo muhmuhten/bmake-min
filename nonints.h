@@ -1,4 +1,4 @@
-/*	$NetBSD: nonints.h,v 1.29 2003/08/07 11:14:55 agc Exp $	*/
+/*	$NetBSD: nonints.h,v 1.32 2004/05/07 08:12:16 sjg Exp $	*/
 
 /*-
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -72,7 +72,7 @@
  *	from: @(#)nonints.h	8.3 (Berkeley) 3/19/94
  */
 
-#ifdef MAKE_BOOTSTRAP
+#ifndef MAKE_NATIVE
 #undef __attribute__
 #define __attribute__(x)
 #endif
@@ -90,6 +90,7 @@ void Arch_End(void);
 int Arch_IsLib(GNode *);
 
 /* compat.c */
+int CompatRunCommand(ClientData cmdp, ClientData gnp);
 void Compat_Run(Lst);
 
 /* cond.c */
@@ -99,7 +100,7 @@ void Cond_End(void);
 
 /* for.c */
 int For_Eval(char *);
-void For_Run(void);
+void For_Run(int);
 
 /* main.c */
 void Main_ParseArgLine(char *);
@@ -130,7 +131,7 @@ void Parse_AddIncludeDir(char *);
 void Parse_File(const char *, FILE *);
 void Parse_Init(void);
 void Parse_End(void);
-void Parse_FromString(char *);
+void Parse_FromString(char *, int);
 Lst Parse_MainName(void);
 
 /* str.c */

@@ -1,18 +1,18 @@
-/*	$NetBSD: util.c,v 1.34 2003/07/16 07:11:29 itojun Exp $	*/
+/*	$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $	*/
 
 /*
  * Missing stuff from OS's
  *
- *	$Id: util.c,v 1.11 2003/12/22 21:20:11 sjg Exp $
+ *	$Id: util.c,v 1.12 2004/05/08 17:55:31 sjg Exp $
  */
 
 #include "make.h"
 
-#ifdef MAKE_BOOTSTRAP
-static char rcsid[] = "$NetBSD: util.c,v 1.34 2003/07/16 07:11:29 itojun Exp $";
+#ifndef MAKE_NATIVE
+static char rcsid[] = "$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $";
 #else
 #ifndef lint
-__RCSID("$NetBSD: util.c,v 1.34 2003/07/16 07:11:29 itojun Exp $");
+__RCSID("$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $");
 #endif
 #endif
 
@@ -37,6 +37,8 @@ strerror(int e)
 #endif
 
 #if !defined(HAVE_STRDUP)
+#include <string.h>
+
 /* strdup
  *
  * Make a duplicate of a string.

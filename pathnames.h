@@ -1,4 +1,4 @@
-/*	$NetBSD: pathnames.h,v 1.13 2003/10/27 00:12:43 lukem Exp $	*/
+/*	$NetBSD: pathnames.h,v 1.14 2004/05/07 00:04:40 ross Exp $	*/
 
 /*
  * Copyright (c) 1990, 1993
@@ -29,13 +29,13 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)pathnames.h	5.2 (Berkeley) 6/1/90
- *	$Id: pathnames.h,v 1.10 2003/12/22 21:18:40 sjg Exp $
+ *	$Id: pathnames.h,v 1.11 2004/05/08 17:55:31 sjg Exp $
  */
 
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#ifdef MAKE_BOOTSTRAP
+#ifndef MAKE_NATIVE
 #if HAVE_NBTOOL_CONFIG_H
 #include "nbtool_config.h"
 #endif

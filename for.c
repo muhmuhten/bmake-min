@@ -1,4 +1,4 @@
-/*	$NetBSD: for.c,v 1.15 2003/08/07 11:14:50 agc Exp $	*/
+/*	$NetBSD: for.c,v 1.17 2004/05/07 00:04:38 ross Exp $	*/
 
 /*
  * Copyright (c) 1992, The Regents of the University of California.
@@ -29,15 +29,15 @@
  * SUCH DAMAGE.
  */
 
-#ifdef MAKE_BOOTSTRAP
-static char rcsid[] = "$NetBSD: for.c,v 1.15 2003/08/07 11:14:50 agc Exp $";
+#ifndef MAKE_NATIVE
+static char rcsid[] = "$NetBSD: for.c,v 1.17 2004/05/07 00:04:38 ross Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)for.c	8.1 (Berkeley) 6/6/93";
 #else
-__RCSID("$NetBSD: for.c,v 1.15 2003/08/07 11:14:50 agc Exp $");
+__RCSID("$NetBSD: for.c,v 1.17 2004/05/07 00:04:38 ross Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -306,7 +306,7 @@ For_Eval(char *line)
  *-----------------------------------------------------------------------
  */
 void
-For_Run(void)
+For_Run(int lineno)
 {
     For arg;
     LstNode ln;
@@ -372,7 +372,7 @@ For_Run(void)
 	    if (old_guy != orig_guy)
 		free(old_guy);
 	}
-	Parse_FromString(guy);
+	Parse_FromString(guy, lineno);
 
 	for (i = 0; i < arg.nvars; i++)
 	    Var_Delete(arg.vars[i], VAR_GLOBAL);
