@@ -1,3 +1,12 @@
+2004-05-11  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* boot-strap: 
+	o ensure that args to --src and --with-mksrc
+	  are resolved before giving them to configure.
+	o add -o "objdir" so that builder can control it,
+	  default is $OS as determined by os.sh
+	o add -q to suppress all the install instructions.
+
 2004-05-08  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Remove __IDSTRING()
