@@ -1,3 +1,15 @@
+2005-03-22  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Important to use .MAKE rather than MAKE.
+
+2005-03-15  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20050315
+	* Merge with NetBSD make, pick up:
+	  o don't mistake .elsefoo for .else
+	  o use suffix-specific search path correctly
+	  o bunch of style nits
+
 2004-05-11  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* boot-strap: 

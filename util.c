@@ -1,18 +1,18 @@
-/*	$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $	*/
+/*	$NetBSD: util.c,v 1.36 2005/02/16 15:11:53 christos Exp $	*/
 
 /*
  * Missing stuff from OS's
  *
- *	$Id: util.c,v 1.12 2004/05/08 17:55:31 sjg Exp $
+ *	$Id: util.c,v 1.13 2005/03/21 21:03:44 sjg Exp $
  */
 
 #include "make.h"
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $";
+static char rcsid[] = "$NetBSD: util.c,v 1.36 2005/02/16 15:11:53 christos Exp $";
 #else
 #ifndef lint
-__RCSID("$NetBSD: util.c,v 1.35 2004/05/07 00:04:40 ross Exp $");
+__RCSID("$NetBSD: util.c,v 1.36 2005/02/16 15:11:53 christos Exp $");
 #endif
 #endif
 
@@ -65,7 +65,7 @@ setenv(const char *name, const char *value, int dum)
 {
     char *p;
     int len = strlen(name) + strlen(value) + 2; /* = \0 */
-    char *ptr = (char*) emalloc(len);
+    char *ptr = emalloc(len);
 
     (void) dum;
 

@@ -1,4 +1,4 @@
-/*	$NetBSD: job.c,v 1.87 2004/07/01 20:38:09 jmc Exp $	*/
+/*	$NetBSD: job.c,v 1.89 2005/02/16 15:11:52 christos Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -70,14 +70,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: job.c,v 1.87 2004/07/01 20:38:09 jmc Exp $";
+static char rcsid[] = "$NetBSD: job.c,v 1.89 2005/02/16 15:11:52 christos Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)job.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: job.c,v 1.87 2004/07/01 20:38:09 jmc Exp $");
+__RCSID("$NetBSD: job.c,v 1.89 2005/02/16 15:11:52 christos Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -231,7 +231,7 @@ static Shell    shells[] = {
 {
     "csh",
     TRUE, "unset verbose", "set verbose", "unset verbose", 10,
-    FALSE, "echo \"%s\"\n", "csh -c \"%s || exit 0\"", "", '#',
+    FALSE, "echo \"%s\"\n", "csh -c \"%s || exit 0\"\n", "", '#',
     "v", "e",
 },
     /*
@@ -687,7 +687,7 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
     char	  *escCmd = NULL;    /* Command with quotes/backticks escaped */
     char     	  *cmd = (char *) cmdp;
     Job           *job = (Job *) jobp;
-    char	  *cp;
+    char	  *cp, *tmp;
     int           i, j;
 
     noSpecials = NoExecute(job->node);
@@ -751,7 +751,7 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
 
     if (!commandShell->hasErrCtl) {
 	/* Worst that could happen is every char needs escaping. */
-	escCmd = (char *) emalloc((strlen(cmd) * 2) + 1);
+	escCmd = emalloc((strlen(cmd) * 2) + 1);
 	for (i = 0, j= 0; cmd[i] != '\0'; i++, j++) {
 		if (cmd[i] == '$' || cmd[i] == '`' || cmd[i] == '\\' || 
 			cmd[i] == '"')
@@ -860,8 +860,9 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
     
     if ((cp = Check_Cwd_Cmd(cmd)) != NULL) {
 	    DBPRINTF("test -d %s && ", cp);
-	    DBPRINTF("cd %s; ", cp);
-    }		    
+	    DBPRINTF("cd %s\n", cp);
+    }
+
     DBPRINTF(cmdTemplate, cmd);
     free(cmdStart);
     if (escCmd)
@@ -880,6 +881,10 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
     }
     if (shutUp && commandShell->hasEchoCtl) {
 	DBPRINTF("%s\n", commandShell->echoOn);
+    }
+    if (cp != NULL) {
+	    DBPRINTF("test -d %s && ", cp);
+	    DBPRINTF("cd %s\n", Var_Value(".OBJDIR", VAR_GLOBAL, &tmp));
     }
     return 0;
 }
@@ -1933,7 +1938,7 @@ JobStart(GNode *gn, int flags, Job *previous)
 	previous->flags &= ~(JOB_FIRST|JOB_IGNERR|JOB_SILENT|JOB_REMOTE);
 	job = previous;
     } else {
-	job = (Job *) emalloc(sizeof(Job));
+	job = emalloc(sizeof(Job));
 	if (job == NULL) {
 	    Punt("JobStart out of memory");
 	}
@@ -2589,7 +2594,7 @@ Job_CatchOutput(void)
      * NOTE: IT IS THE RESPONSIBILITY OF Rmt_Wait TO CALL Job_CatchChildren
      * IN A TIMELY FASHION TO CATCH ANY LOCALLY RUNNING JOBS THAT EXIT.
      * It may use the variable nLocal to determine if it needs to call
-     * Job_CatchChildren (if nLocal is 0, there's nothing for which to
+     * Job_CatchChildren(if nLocal is 0, there's nothing for which to
      * wait...)
      */
     while (nJobs != 0 && pnJobs == nJobs) {
@@ -3022,7 +3027,7 @@ Job_ParseShell(char *line)
 	    }
 	    commandShell = sh;
 	} else {
-	    commandShell = (Shell *) emalloc(sizeof(Shell));
+	    commandShell = emalloc(sizeof(Shell));
 	    *commandShell = newShell;
 	}
     }
@@ -3536,7 +3541,7 @@ Job_ServerStart(int maxproc)
     char jobarg[64];
     
     if (pipe(job_pipe) < 0)
-	Fatal ("error in pipe: %s", strerror(errno));
+	Fatal("error in pipe: %s", strerror(errno));
 
     /*
      * We mark the input side of the pipe non-blocking; we poll(2) the
