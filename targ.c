@@ -1,4 +1,4 @@
-/*	$NetBSD: targ.c,v 1.31 2004/05/07 00:04:40 ross Exp $	*/
+/*	$NetBSD: targ.c,v 1.33 2004/07/01 20:38:09 jmc Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: targ.c,v 1.31 2004/05/07 00:04:40 ross Exp $";
+static char rcsid[] = "$NetBSD: targ.c,v 1.33 2004/07/01 20:38:09 jmc Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)targ.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: targ.c,v 1.31 2004/05/07 00:04:40 ross Exp $");
+__RCSID("$NetBSD: targ.c,v 1.33 2004/07/01 20:38:09 jmc Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -742,7 +742,7 @@ TargPropagateCohort(ClientData cgnp, ClientData pgnp)
 }
 
 static int
-TargPropagateNode(ClientData gnp, ClientData junk)
+TargPropagateNode(ClientData gnp, ClientData junk __unused)
 {
     GNode	  *gn = (GNode *) gnp;
     if (gn->type & OP_DOUBLEDEP)
