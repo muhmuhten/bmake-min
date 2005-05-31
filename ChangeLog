@@ -1,3 +1,11 @@
+2005-05-30  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20050530
+	* Merge with NetBSD make, pick up:
+	  o Handle dependencies for .BEGIN, .END and .INTERRUPT
+
+	* README: was seriously out of date.
+	
 2005-03-22  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Important to use .MAKE rather than MAKE.
