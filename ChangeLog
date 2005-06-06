@@ -1,3 +1,10 @@
+2005-06-06  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20050606
+	* Merge with NetBSD make, pick up:
+	  o :0x modifier for randomizing a list
+	  o fixes for a number of -Wuninitialized issues.
+
 2005-05-30  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20050530

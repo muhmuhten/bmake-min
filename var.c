@@ -1,4 +1,4 @@
-/*	$NetBSD: var.c,v 1.92 2005/02/16 15:11:53 christos Exp $	*/
+/*	$NetBSD: var.c,v 1.95 2005/06/03 07:02:39 lukem Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: var.c,v 1.92 2005/02/16 15:11:53 christos Exp $";
+static char rcsid[] = "$NetBSD: var.c,v 1.95 2005/06/03 07:02:39 lukem Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)var.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: var.c,v 1.92 2005/02/16 15:11:53 christos Exp $");
+__RCSID("$NetBSD: var.c,v 1.95 2005/06/03 07:02:39 lukem Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -286,7 +286,7 @@ static char *VarModify(GNode *, Var_Parse_State *,
     const char *,
     Boolean (*)(GNode *, Var_Parse_State *, char *, Boolean, Buffer, ClientData),
     ClientData);
-static char *VarSort(const char *);
+static char *VarOrder(const char *, const char);
 static char *VarUniq(const char *);
 static int VarWordCompare(const void *, const void *);
 static void VarPrintVar(ClientData);
@@ -1542,14 +1542,15 @@ VarWordCompare(const void *a, const void *b)
 
 /*-
  *-----------------------------------------------------------------------
- * VarSort --
- *	Sort the words in the string.
+ * VarOrder --
+ *	Order the words in the string.
  *
  * Input:
- *	str		String whose words should be sorted
+ *	str		String whose words should be sorted.
+ *	otype		How to order: s - sort, x - random.
  *
  * Results:
- *	A string containing the words sorted
+ *	A string containing the words ordered.
  *
  * Side Effects:
  *	None.
@@ -1557,7 +1558,7 @@ VarWordCompare(const void *a, const void *b)
  *-----------------------------------------------------------------------
  */
 static char *
-VarSort(const char *str)
+VarOrder(const char *str, const char otype)
 {
     Buffer  	  buf;	    	    /* Buffer for the new string */
     char **av;			    /* word list [first word does not count] */
@@ -1569,7 +1570,31 @@ VarSort(const char *str)
     av = brk_string(str, &ac, FALSE, &as);
 
     if (ac > 0)
-	qsort(av, ac, sizeof(char *), VarWordCompare);
+	switch (otype) {
+	case 's':	/* sort alphabetically */
+	    qsort(av, ac, sizeof(char *), VarWordCompare);
+	    break;
+	case 'x':	/* randomize */
+	{
+	    int rndidx;
+	    char *t;
+
+	    /*
+	     * We will use [ac..2] range for mod factors. This will produce
+	     * random numbers in [(ac-1)..0] interval, and minimal
+	     * reasonable value for mod factor is 2 (the mod 1 will produce
+	     * 0 with probability 1).
+	     */
+	    for (i = ac-1; i > 0; i--) {
+		rndidx = random() % (i + 1);
+		if (i != rndidx) {
+		    t = av[i];
+		    av[i] = av[rndidx];
+		    av[rndidx] = t;
+		}
+	    }
+	}
+	} /* end of switch */
 
     for (i = 0; i < ac; i++) {
 	Buf_AddBytes(buf, strlen(av[i]), (Byte *) av[i]);
@@ -2149,7 +2174,8 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
      *  	  	    	each word
      *  	  :R	    	Substitute the root of each word
      *  	  	    	(pathname minus the suffix).
-     *		  :O		("Order") Sort words in variable.
+     *		  :O		("Order") Alphabeticaly sort words in variable.
+     *		  :Ox		("intermiX") Randomize words in variable.
      *		  :u		("uniq") Remove adjacent duplicate words.
      *		  :tu		Converts the variable contents to uppercase.
      *		  :tl		Converts the variable contents to lowercase.
@@ -2246,6 +2272,8 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 		    VarPattern	pattern;
 		    int	how;
 
+		    v_ctxt = ctxt;
+		    sv_name = NULL;
 		    ++tstr;
 		    if (v->flags & VAR_JUNK) {
 			/*
@@ -2254,12 +2282,9 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			 */
 			sv_name = v->name;
 			v->name = strdup(v->name);
-			v_ctxt = ctxt;
 		    } else if (ctxt != VAR_GLOBAL) {
 			if (VarFind(v->name, ctxt, 0) == (Var *)NIL)
 			    v_ctxt = VAR_GLOBAL;
-			else
-			    v_ctxt = ctxt;
 		    }
 			
 		    switch ((how = *tstr)) {
@@ -2272,7 +2297,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			cp = ++tstr;
 			break;
 		    }
-			/* '{' */
+			/* XXX: appease vi sm: '{' */
 		    delim = '}';
 		    pattern.flags = 0;
 
@@ -2650,7 +2675,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 				/*
 				 * Found ":ts<unrecognised><unrecognised>".
 				 */
-				break;	/* not us */
+				goto bad_modifier;
 			    }
 
 			    termc = *cp;
@@ -2691,14 +2716,14 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			} else {
 			    /*
 			     * Found ":t<unrecognised><unrecognised>".
-			     * Should this be an error?
 			     */
+			    goto bad_modifier;
 			}
 		    } else {
 			/*
 			 * Found ":t<endc>" or ":t:".
-			 * Should this be an error?
 			 */
+			goto bad_modifier;
 		    }
 		    break;
 		}
@@ -2871,6 +2896,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 						     &pattern.rightLen,
 						     NULL)) == NULL)
 			goto cleanup;
+			/* XXX: appease vi sm: ')' '}' */
 
 		    termc = *--cp;
 		    delim = '\0';
@@ -2969,7 +2995,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 		case 'T':
 		    if (tstr[1] == endc || tstr[1] == ':') {
 			newStr = VarModify(ctxt, &parsestate, nstr, VarTail,
@@ -2978,7 +3004,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 		case 'H':
 		    if (tstr[1] == endc || tstr[1] == ':') {
 			newStr = VarModify(ctxt, &parsestate, nstr, VarHead,
@@ -2987,7 +3013,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 		case 'E':
 		    if (tstr[1] == endc || tstr[1] == ':') {
 			newStr = VarModify(ctxt, &parsestate, nstr, VarSuffix,
@@ -2996,7 +3022,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 		case 'R':
 		    if (tstr[1] == endc || tstr[1] == ':') {
 			newStr = VarModify(ctxt, &parsestate, nstr, VarRoot,
@@ -3005,15 +3031,26 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 		case 'O':
+		{
+		    char otype;
+
+		    cp = tstr + 1;	/* skip to the rest in any case */
 		    if (tstr[1] == endc || tstr[1] == ':') {
-			newStr = VarSort(nstr);
-			cp = tstr + 1;
+			otype = 's';
 			termc = *cp;
-			break;
+		    } else if ( (tstr[1] == 'x') &&
+		    		(tstr[2] == endc || tstr[2] == ':') ) {
+			otype = tstr[1];
+			cp = tstr + 2;
+			termc = *cp;
+		    } else {
+			goto bad_modifier;
 		    }
-		    /*FALLTHRU*/
+		    newStr = VarOrder(nstr, otype);
+		    break;
+		}
 		case 'u':
 		    if (tstr[1] == endc || tstr[1] == ':') {
 			newStr = VarUniq(nstr);
@@ -3021,7 +3058,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 #ifdef SUNSHCMD
 		case 's':
 		    if (tstr[1] == 'h' && (tstr[2] == endc || tstr[2] == ':')) {
@@ -3033,7 +3070,7 @@ Var_Parse(const char *str, GNode *ctxt, Boolean err, int *lengthPtr,
 			termc = *cp;
 			break;
 		    }
-		    /*FALLTHRU*/
+		    goto default_case;
 #endif
                 default:
 		default_case: 

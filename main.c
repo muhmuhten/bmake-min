@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.106 2005/02/16 15:11:52 christos Exp $	*/
+/*	$NetBSD: main.c,v 1.108 2005/06/03 16:15:46 lukem Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,7 +69,7 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: main.c,v 1.106 2005/02/16 15:11:52 christos Exp $";
+static char rcsid[] = "$NetBSD: main.c,v 1.108 2005/06/03 16:15:46 lukem Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,7 +81,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\n\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.106 2005/02/16 15:11:52 christos Exp $");
+__RCSID("$NetBSD: main.c,v 1.108 2005/06/03 16:15:46 lukem Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -236,6 +236,7 @@ MainParseArgs(int argc, char **argv)
 	getopt_def = OPTFLAGS;
 rearg:	
 	inOption = FALSE;
+	optscan = NULL;
 	while(argc > 1) {
 		char *getopt_spec;
 		if(!inOption)
@@ -273,6 +274,8 @@ rearg:
 				argvalue = argv[2];
 				arginc = 2;
 			}
+		} else {
+			argvalue = NULL; 
 		}
 		switch(c) {
 		case '\0':
@@ -661,6 +664,14 @@ main(int argc, char **argv)
 					/* avoid faults on read-only strings */
 	static char defsyspath[] = _PATH_DEFSYSPATH;
 	char found_path[MAXPATHLEN + 1];	/* for searching for sys.mk */
+	struct timeval rightnow;		/* to initialize random seed */
+
+	/*
+	 * Set the seed to produce a different random sequences
+	 * on each program execution.
+	 */
+	gettimeofday(&rightnow, NULL);
+	srandom(rightnow.tv_sec + rightnow.tv_usec);
 	
 	if ((progname = strrchr(argv[0], '/')) != NULL)
 		progname++;
