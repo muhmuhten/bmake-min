@@ -1,3 +1,9 @@
+2005-09-03  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20050901
+	* Merge with NetBSD make, pick up:
+	  o possible parse error causing us to wander off.
+
 2005-06-06  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20050606
