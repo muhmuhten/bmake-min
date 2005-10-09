@@ -1136,7 +1136,16 @@ ReadMakefile(ClientData p, ClientData q __unused)
 		Parse_File("(stdin)", stdin);
 		Var_Set("MAKEFILE", "", VAR_GLOBAL, 0);
 	} else {
+#ifdef __INTERIX
+		/*
+		 * XXX Hack from tv:
+		 * This system has broken filesystem support - can't
+		 * always distinguish b/w [Mm]akefile.
+		 */
+		setMAKEFILE = FALSE;
+#else
 		setMAKEFILE = strcmp(fname, ".depend");
+#endif
 
 		/* if we've chdir'd, rebuild the path name */
 		if (strcmp(curdir, objdir) && *fname != '/') {

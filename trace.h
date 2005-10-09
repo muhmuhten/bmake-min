@@ -47,7 +47,7 @@ typedef enum {
 	MAKEERROR,
 	JOBSTART,
 	JOBEND,
-	MAKEINTR,
+	MAKEINTR
 } TrEvent;
 
 void Trace_Init(const char *);

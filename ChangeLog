@@ -1,3 +1,9 @@
+2005-10-09  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20051001
+	  support for UnixWare and some other systems,
+	  based on patches from pkgsrc/bootstrap
+
 2005-09-03  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20050901
