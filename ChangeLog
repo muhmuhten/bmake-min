@@ -1,3 +1,9 @@
+2005-10-31  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20051031
+	* ranlib.h: skip on OSF too.
+	  (NetBSD PR 31864)
+
 2005-10-10  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20051002
