@@ -1,4 +1,4 @@
-/*	$NetBSD: parse.c,v 1.106 2005/08/09 21:36:42 christos Exp $	*/
+/*	$NetBSD: parse.c,v 1.109 2006/02/11 20:59:49 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: parse.c,v 1.106 2005/08/09 21:36:42 christos Exp $";
+static char rcsid[] = "$NetBSD: parse.c,v 1.109 2006/02/11 20:59:49 dsl Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)parse.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: parse.c,v 1.106 2005/08/09 21:36:42 christos Exp $");
+__RCSID("$NetBSD: parse.c,v 1.109 2006/02/11 20:59:49 dsl Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -305,7 +305,7 @@ static int ParseAddDir(ClientData, ClientData);
 static int ParseClearPath(ClientData, ClientData);
 static void ParseDoDependency(char *);
 static int ParseAddCmd(ClientData, ClientData);
-static __inline int ParseReadc(void);
+static inline int ParseReadc(void);
 static void ParseUnreadc(int);
 static void ParseHasCommands(ClientData);
 static void ParseDoInclude(char *);
@@ -515,6 +515,11 @@ ParseLinkSrc(ClientData pgnp, ClientData cgnp)
     if (specType == Not)
 	    (void)Lst_AtEnd(cgn->parents, (ClientData)pgn);
     pgn->unmade += 1;
+    if (DEBUG(PARSE)) {
+	printf("# ParseLinkSrc: added child %s - %s\n", pgn->name, cgn->name);
+	Targ_PrintNode(pgn, 0);
+	Targ_PrintNode(cgn, 0);
+    }
     return (0);
 }
 
@@ -617,18 +622,26 @@ ParseAddDep(ClientData pp, ClientData sp)
     GNode *p = (GNode *)pp;
     GNode *s = (GNode *)sp;
 
-    if (p->order < s->order) {
-	/*
-	 * XXX: This can cause loops, and loops can cause unmade targets,
-	 * but checking is tedious, and the debugging output can show the
-	 * problem
-	 */
-	(void)Lst_AtEnd(p->successors, (ClientData)s);
-	(void)Lst_AtEnd(s->preds, (ClientData)p);
-	return 0;
-    }
-    else
+    if (DEBUG(PARSE))
+	printf("ParseAddDep: %p(%s):%d %p(%s):%d\n",
+		p, p->name, p->order, s, s->name, s->order);
+    if (p->order >= s->order)
 	return 1;
+
+    /*
+     * XXX: This can cause loops, and loops can cause unmade targets,
+     * but checking is tedious, and the debugging output can show the
+     * problem
+     */
+    (void)Lst_AtEnd(p->successors, (ClientData)s);
+    (void)Lst_AtEnd(s->preds, (ClientData)p);
+    if (DEBUG(PARSE)) {
+	printf("# ParseAddDep: added .WAIT dependency %s - %s\n",
+		p->name, s->name);
+	Targ_PrintNode(p, 0);
+	Targ_PrintNode(s, 0);
+    }
+    return 0;
 }
 
 /* -
@@ -697,6 +710,9 @@ ParseDoSpecialSrc(ClientData tp, ClientData sp)
     } else {
 	ParseLinkSrc((ClientData)tn, (ClientData)gn);
     }
+    if (DEBUG(PARSE))
+	printf("ParseDoSpecialSrc: set %p(%s):%d (was %d)\n",
+		gn, gn->name, waiting, gn->order);
     gn->order = waiting;
     (void)Lst_AtEnd(ss->allsrc, (ClientData)gn);
     if (waiting) {
@@ -776,6 +792,12 @@ ParseDoSrc(int tOp, char *src, Lst allsrc, Boolean resolve)
 	if (predecessor != NILGNODE) {
 	    (void)Lst_AtEnd(predecessor->successors, (ClientData)gn);
 	    (void)Lst_AtEnd(gn->preds, (ClientData)predecessor);
+	    if (DEBUG(PARSE)) {
+		printf("# ParseDoSrc: added Order dependency %s - %s\n",
+			predecessor->name, gn->name);
+		Targ_PrintNode(predecessor, 0);
+		Targ_PrintNode(gn, 0);
+	    }
 	}
 	/*
 	 * The current source now becomes the predecessor for the next one.
@@ -818,6 +840,9 @@ ParseDoSrc(int tOp, char *src, Lst allsrc, Boolean resolve)
 	break;
     }
 
+    if (DEBUG(PARSE))
+	printf("ParseDoSrc: set %p(%s):%d (was %d)\n",
+		gn, gn->name, waiting, gn->order);
     gn->order = waiting;
     (void)Lst_AtEnd(allsrc, (ClientData)gn);
     if (waiting) {
@@ -1099,10 +1124,8 @@ ParseDoDependency(char *line)
 			DEFAULT = gn;
 			break;
 		    case NotParallel:
-		    {
-			maxJobs = 1;
+			not_parallel = 1;
 			break;
-		    }
 		    case SingleShell:
 			compatMake = TRUE;
 			break;
@@ -2307,7 +2330,7 @@ ParseEOF(int opened)
  * Side Effects:
  *---------------------------------------------------------------------
  */
-static __inline int 
+static inline int 
 ParseReadc(void)
 {
     if (curFile.F)

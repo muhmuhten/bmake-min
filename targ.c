@@ -1,4 +1,4 @@
-/*	$NetBSD: targ.c,v 1.37 2005/08/08 16:42:54 christos Exp $	*/
+/*	$NetBSD: targ.c,v 1.41 2006/02/11 20:19:36 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: targ.c,v 1.37 2005/08/08 16:42:54 christos Exp $";
+static char rcsid[] = "$NetBSD: targ.c,v 1.41 2006/02/11 20:19:36 dsl Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)targ.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: targ.c,v 1.37 2005/08/08 16:42:54 christos Exp $");
+__RCSID("$NetBSD: targ.c,v 1.41 2006/02/11 20:19:36 dsl Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -141,7 +141,6 @@ static Hash_Table targets;	/* a hash table of same */
 
 static int TargPrintOnlySrc(ClientData, ClientData);
 static int TargPrintName(ClientData, ClientData);
-static int TargPrintNode(ClientData, ClientData);
 #ifdef CLEANUP
 static void TargFreeGN(ClientData);
 #endif
@@ -503,13 +502,23 @@ Targ_SetMain(GNode *gn)
     mainTarg = gn;
 }
 
+#define PrintWait (ClientData)1
+#define PrintPath (ClientData)2
+
 static int
-TargPrintName(ClientData gnp, ClientData ppath)
+TargPrintName(ClientData gnp, ClientData pflags)
 {
+    static int last_order;
     GNode *gn = (GNode *)gnp;
+
+    if (pflags == PrintWait && gn->order > last_order)
+	printf(".WAIT ");
+    last_order = gn->order;
+
     printf("%s ", gn->name);
+
 #ifdef notdef
-    if (ppath) {
+    if (pflags == PrintPath) {
 	if (gn->path) {
 	    printf("[%s]  ", gn->path);
 	}
@@ -518,7 +527,8 @@ TargPrintName(ClientData gnp, ClientData ppath)
 	}
     }
 #endif /* notdef */
-    return (ppath ? 0 : 0);
+
+    return 0;
 }
 
 
@@ -607,11 +617,11 @@ Targ_PrintType(int type)
  *	print the contents of a node
  *-----------------------------------------------------------------------
  */
-static int
-TargPrintNode(ClientData gnp, ClientData passp)
+int
+Targ_PrintNode(ClientData gnp, ClientData passp)
 {
     GNode         *gn = (GNode *)gnp;
-    int	    	  pass = *(int *)passp;
+    int	    	  pass = passp ? *(int *)passp : 0;
     if (!OP_NOP(gn->type)) {
 	printf("#\n");
 	if (gn == mainTarg) {
@@ -646,10 +656,23 @@ TargPrintNode(ClientData gnp, ClientData passp)
 		Lst_ForEach(gn->iParents, TargPrintName, (ClientData)0);
 		fputc('\n', stdout);
 	    }
+	} else {
+	    if (gn->unmade)
+		printf("# %d unmade children\n", gn->unmade);
 	}
 	if (!Lst_IsEmpty (gn->parents)) {
 	    printf("# parents: ");
 	    Lst_ForEach(gn->parents, TargPrintName, (ClientData)0);
+	    fputc('\n', stdout);
+	}
+	if (!Lst_IsEmpty (gn->preds)) {
+	    printf("# preds: ");
+	    Lst_ForEach(gn->preds, TargPrintName, (ClientData)0);
+	    fputc('\n', stdout);
+	}
+	if (!Lst_IsEmpty (gn->successors)) {
+	    printf("# successors: ");
+	    Lst_ForEach(gn->successors, TargPrintName, (ClientData)0);
 	    fputc('\n', stdout);
 	}
 
@@ -663,12 +686,12 @@ TargPrintNode(ClientData gnp, ClientData passp)
 		printf(":: "); break;
 	}
 	Targ_PrintType(gn->type);
-	Lst_ForEach(gn->children, TargPrintName, (ClientData)0);
+	Lst_ForEach(gn->children, TargPrintName, PrintWait);
 	fputc('\n', stdout);
 	Lst_ForEach(gn->commands, Targ_PrintCmd, (ClientData)0);
 	printf("\n\n");
 	if (gn->type & OP_DOUBLEDEP) {
-	    Lst_ForEach(gn->cohorts, TargPrintNode, (ClientData)&pass);
+	    Lst_ForEach(gn->cohorts, Targ_PrintNode, (ClientData)&pass);
 	}
     }
     return (0);
@@ -717,7 +740,7 @@ void
 Targ_PrintGraph(int pass)
 {
     printf("#*** Input graph:\n");
-    Lst_ForEach(allTargets, TargPrintNode, (ClientData)&pass);
+    Lst_ForEach(allTargets, Targ_PrintNode, (ClientData)&pass);
     printf("\n\n");
     printf("#\n#   Files that are only sources:\n");
     Lst_ForEach(allTargets, TargPrintOnlySrc, (ClientData) 0);

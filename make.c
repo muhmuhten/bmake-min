@@ -1,4 +1,4 @@
-/*	$NetBSD: make.c,v 1.58 2005/08/08 16:42:54 christos Exp $	*/
+/*	$NetBSD: make.c,v 1.61 2006/02/11 20:59:49 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: make.c,v 1.58 2005/08/08 16:42:54 christos Exp $";
+static char rcsid[] = "$NetBSD: make.c,v 1.61 2006/02/11 20:59:49 dsl Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)make.c	8.1 (Berkeley) 6/6/93";
 #else
-__RCSID("$NetBSD: make.c,v 1.58 2005/08/08 16:42:54 christos Exp $");
+__RCSID("$NetBSD: make.c,v 1.61 2006/02/11 20:59:49 dsl Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -726,6 +726,10 @@ Make_Update(GNode *cgn)
 		 * Queue the node up -- any unmade predecessors will
 		 * be dealt with in MakeStartJobs.
 		 */
+		if (DEBUG(MAKE)) {
+		    printf("# %s made, schedule %s\n", cgn->name, pgn->name);
+		    Targ_PrintNode(pgn, 0);
+		}
 		(void)Lst_EnQueue(toBeMade, (ClientData)pgn);
 	    } else if (pgn->unmade < 0) {
 		Error("Graph cycles through %s", pgn->name);
@@ -931,8 +935,14 @@ static Boolean
 MakeStartJobs(void)
 {
     GNode	*gn;
+    int		have_token = 0;
 
     while (!Lst_IsEmpty (toBeMade)) {
+	/* Get token now to avoid cycling job-list when we only have 1 token */
+	if (!have_token && !Job_TokenWithdraw())
+	    break;
+	have_token = 1;
+
 	gn = (GNode *)Lst_DeQueue(toBeMade);
 	if (DEBUG(MAKE)) {
 	    printf("Examining %s...", gn->name);
@@ -966,11 +976,6 @@ MakeStartJobs(void)
 	    }
 	}
 
-	if (!Job_TokenWithdraw()) {
-	    Lst_AtFront(toBeMade, gn);
-	    break;
-	}
-
 	numNodes--;
 	if (Make_OODate(gn)) {
 	    if (DEBUG(MAKE)) {
@@ -981,6 +986,7 @@ MakeStartJobs(void)
 	    }
 	    Make_DoAllVar(gn);
 	    Job_Make(gn);
+	    have_token = 0;
 	} else {
 	    if (DEBUG(MAKE)) {
 		printf("up-to-date\n");
@@ -995,10 +1001,13 @@ MakeStartJobs(void)
 		 */
 		Make_DoAllVar(gn);
 	    }
-	    Job_TokenReturn();
 	    Make_Update(gn);
 	}
     }
+
+    if (have_token)
+	Job_TokenReturn();
+
     return (FALSE);
 }
 
@@ -1186,6 +1195,10 @@ Make_Run(Lst targs)
     int	    	    errors; 	/* Number of errors the Job module reports */
 
     toBeMade = Make_ExpandUse(targs);
+    if (DEBUG(MAKE)) {
+	 printf("#***# toBeMade\n");
+	 Lst_ForEach(toBeMade, Targ_PrintNode, 0);
+    }
 
     if (queryFlag) {
 	/*

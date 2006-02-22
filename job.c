@@ -1,4 +1,4 @@
-/*	$NetBSD: job.c,v 1.98 2005/08/08 16:42:54 christos Exp $	*/
+/*	$NetBSD: job.c,v 1.104 2006/02/11 20:58:53 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -70,14 +70,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: job.c,v 1.98 2005/08/08 16:42:54 christos Exp $";
+static char rcsid[] = "$NetBSD: job.c,v 1.104 2006/02/11 20:58:53 dsl Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)job.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: job.c,v 1.98 2005/08/08 16:42:54 christos Exp $");
+__RCSID("$NetBSD: job.c,v 1.104 2006/02/11 20:58:53 dsl Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -190,6 +190,13 @@ static int    	aborting = 0;	    /* why is the make aborting? */
 #define ABORT_ERROR	1   	    /* Because of an error */
 #define ABORT_INTERRUPT	2   	    /* Because it was interrupted */
 #define ABORT_WAIT	3   	    /* Waiting for jobs to finish */
+#define JOB_TOKENS	"+EI+"	    /* Token to requeue for each abort state */
+
+/*
+ * this tracks the number of tokens currently "out" to build jobs.
+ */
+int jobTokensRunning = 0;
+int not_parallel = 0;		    /* set if .NOT_PARALLEL */
 
 /*
  * XXX: Avoid SunOS bug... FILENO() is fp->_file, and file
@@ -335,8 +342,7 @@ STATIC Lst	stoppedJobs;	/* Lst of Job structures describing
 				 * limits or migration home */
 
 
-sigset_t	caught_signals;	/* Set of signals we handle */
-
+static sigset_t caught_signals;	/* Set of signals we handle */
 #if defined(USE_PGRP)
 # if defined(HAVE_KILLPG)
 #  define KILL(pid, sig)	killpg((pid), (sig))
@@ -344,7 +350,7 @@ sigset_t	caught_signals;	/* Set of signals we handle */
 #  define KILL(pid, sig)	kill(-(pid), (sig))
 # endif
 #else
-# define KILL(pid, sig)		kill((pid), (sig))
+#  define KILL(pid, sig)		kill((pid), (sig))
 #endif
 
 /*
@@ -404,7 +410,7 @@ static void JobSigLock(sigset_t *omaskp)
 {
 	if (sigprocmask(SIG_BLOCK, &caught_signals, omaskp) != 0) {
 		Punt("JobSigLock: sigprocmask: %s", strerror(errno));
-	sigemptyset(omaskp);
+		sigemptyset(omaskp);
 	}
 }
 
@@ -976,7 +982,7 @@ JobClose(Job *job)
 static void
 JobFinish (Job *job, WAIT_T status)
 {
-    Boolean 	  done;
+    Boolean 	 done, return_job_token;
 
     if ((WIFEXITED(status) &&
 	  (((WEXITSTATUS(status) != 0) && !(job->flags & JOB_IGNERR)))) ||
@@ -1195,15 +1201,16 @@ JobFinish (Job *job, WAIT_T status)
 	done = TRUE;
     }
 
+    return_job_token = FALSE;
+
     if (done) {
 	Trace_Log(JOBEND, job);
 	if (!compatMake && !(job->flags & JOB_SPECIAL)) {
 	    if ((WAIT_STATUS(status) != 0) ||
 	        (aborting == ABORT_ERROR) ||
 	        (aborting == ABORT_INTERRUPT))
-		Job_TokenReturn();
+		return_job_token = TRUE;
 	}
-	
     }
 
     if (done &&
@@ -1224,7 +1231,7 @@ JobFinish (Job *job, WAIT_T status)
 	}
 	job->node->made = MADE;
 	if (!(job->flags & JOB_SPECIAL))
-	    Job_TokenReturn();
+	    return_job_token = TRUE;
 	Make_Update(job->node);
 	free(job);
     } else if (WAIT_STATUS(status)) {
@@ -1244,6 +1251,9 @@ JobFinish (Job *job, WAIT_T status)
 	 */
 	aborting = ABORT_ERROR;
     }
+
+    if (return_job_token)
+	Job_TokenReturn();
 
     if ((aborting == ABORT_ERROR) && Job_Empty()) {
 	/*
@@ -2231,7 +2241,7 @@ JobOutput(Job *job, char *cp, char *endp, int msg)
 	while (ecp != NULL) {
 	    if (cp != ecp) {
 		*ecp = '\0';
-		if (msg && job->node != lastNode) {
+		if (!beSilent && msg && job->node != lastNode) {
 		    MESSAGE(stdout, job->node);
 		    lastNode = job->node;
 		}
@@ -2395,7 +2405,7 @@ end_loop:
 		 * our own free will.
 		 */
 		if (*cp != '\0') {
-		    if (job->node != lastNode) {
+		    if (!beSilent && job->node != lastNode) {
 			MESSAGE(stdout, job->node);
 			lastNode = job->node;
 		    }
@@ -2610,7 +2620,6 @@ Job_CatchOutput(void)
 #endif
 
     (void)fflush(stdout);
-    Job_TokenFlush();
 #ifdef RMT_WILL_WATCH
     pnJobs = nJobs;
 
@@ -2819,7 +2828,7 @@ static void JobSigReset(void)
 {
 #define DELSIG(s)					\
     if (sigismember(&caught_signals, s)) {		\
-	(void)signal(SIGINT, SIG_DFL);			\
+	(void)signal(s, SIG_DFL);			\
     }
 
     DELSIG(SIGINT)
@@ -2856,20 +2865,18 @@ static void JobSigReset(void)
 Boolean
 Job_Empty(void)
 {
-    if (nJobs == 0) {
-	if (!Lst_IsEmpty(stoppedJobs) && !aborting) {
-	    /*
-	     * The job table is obviously not full if it has no jobs in
-	     * it...Try and restart the stopped jobs.
-	     */
-	    JobRestartJobs();
-	    return(FALSE);
-	} else {
-	    return(TRUE);
-	}
-    } else {
-	return(FALSE);
-    }
+    if (nJobs != 0)
+	return FALSE;
+
+    if (Lst_IsEmpty(stoppedJobs) || aborting)
+	return TRUE;
+
+    /*
+     * The job table is obviously not full if it has no jobs in
+     * it...Try and restart the stopped jobs.
+     */
+    JobRestartJobs();
+    return FALSE;
 }
 
 /*-
@@ -3257,7 +3264,6 @@ Job_Finish(void)
 	    JobRun(postCommands);
 	}
     }
-    Job_TokenFlush();
     return(errors);
 }
 
@@ -3306,7 +3312,6 @@ Job_Wait(void)
 	Job_CatchChildren(!usePipes);
 #endif /* RMT_WILL_WATCH */
     }
-    Job_TokenFlush();
     aborting = 0;
 }
 
@@ -3537,10 +3542,16 @@ readyfd(Job *job)
 static void
 JobTokenAdd(void)
 {
+    char tok = JOB_TOKENS[aborting], tok1;
+
+    /* If we are depositing an error token flush everything else */
+    while (tok != '+' && read(job_pipe[0], &tok1, 1) == 1)
+	continue;
 
     if (DEBUG(JOB))
-	printf("deposit token\n");
-    write(job_pipe[1], "+", 1);
+	printf("(%d) aborting %d, deposit token %c\n",
+	    getpid(), aborting, JOB_TOKENS[aborting]);
+    write(job_pipe[1], &tok, 1);
 }
 
 /*-
@@ -3554,11 +3565,20 @@ JobTokenAdd(void)
 void
 Job_ServerStart(int maxproc)
 {
-    int i, flags;
+    int i, fd, flags;
     char jobarg[64];
     
     if (pipe(job_pipe) < 0)
 	Fatal("error in pipe: %s", strerror(errno));
+
+    for (i = 0; i < 2; i++) {
+       /* Avoid using low numbered fds */
+       fd = fcntl(job_pipe[i], F_DUPFD, 15);
+       if (fd != -1) {
+	   close(job_pipe[i]);
+	   job_pipe[i] = fd;
+       }
+    }
 
     /*
      * We mark the input side of the pipe non-blocking; we poll(2) the
@@ -3581,7 +3601,7 @@ Job_ServerStart(int maxproc)
 
     Var_Append(MAKEFLAGS, "-J", VAR_GLOBAL);
     Var_Append(MAKEFLAGS, jobarg, VAR_GLOBAL);			
-	
+
     /*
      * Preload job_pipe with one token per job, save the one
      * "extra" token for the primary job.
@@ -3594,11 +3614,6 @@ Job_ServerStart(int maxproc)
 	JobTokenAdd();
 }
 
-/*
- * this tracks the number of tokens currently "out" to build jobs.
- */
-int jobTokensRunning = 0;
-int jobTokensFree = 0;
 /*-
  *-----------------------------------------------------------------------
  * Job_TokenReturn --
@@ -3613,8 +3628,8 @@ Job_TokenReturn(void)
     jobTokensRunning--;
     if (jobTokensRunning < 0)
 	Punt("token botch");
-    if (jobTokensRunning)
-	jobTokensFree++;
+    if (jobTokensRunning || JOB_TOKENS[aborting] != '+')
+	JobTokenAdd();
 }
 
 /*-
@@ -3637,60 +3652,49 @@ Job_TokenReturn(void)
 Boolean
 Job_TokenWithdraw(void)
 {
-    char tok;
+    char tok, tok1;
     int count;
 
     wantToken = FALSE;
+    if (DEBUG(JOB))
+	printf("Job_TokenWithdraw(%d): aborting %d, running %d\n",
+		getpid(), aborting, jobTokensRunning);
 
-    if (aborting)
-	    return FALSE;
+    if (aborting || (jobTokensRunning && not_parallel))
+	return FALSE;
 
-    if (jobTokensRunning == 0) {
-	if (DEBUG(JOB))
-	    printf("first one's free\n");
-	jobTokensRunning++;
-	return TRUE;
-    }
-    if (jobTokensFree > 0) {
-	jobTokensFree--;
-	jobTokensRunning++;
-	return TRUE;
-    }
     count = read(job_pipe[0], &tok, 1);
     if (count == 0)
 	Fatal("eof on job pipe!");
-    else if (count < 0) {
+    if (count < 0 && jobTokensRunning != 0) {
 	if (errno != EAGAIN) {
 	    Fatal("job pipe read: %s", strerror(errno));
 	}
 	if (DEBUG(JOB))
-	    printf("blocked for token\n");
+	    printf("(%d) blocked for token\n", getpid());
 	wantToken = TRUE;
 	return FALSE;
     }
+
+    if (count == 1 && tok != '+') {
+	/* Remove any other job tokens */
+	if (DEBUG(JOB))
+	    printf("(%d) aborted by token %c\n", getpid(), tok);
+	while (read(job_pipe[0], &tok1, 1) == 1)
+	    continue;
+	/* And put the stopper back */
+	write(job_pipe[1], &tok, 1);
+	Fatal("A failure has been detected in another branch of the parallel make");
+    }
+
+    if (count == 1 && jobTokensRunning == 0)
+	/* We didn't want the token really */
+	write(job_pipe[1], &tok, 1);
+
     jobTokensRunning++;
     if (DEBUG(JOB))
-	printf("withdrew token\n");
+	printf("(%d) withdrew token\n", getpid());
     return TRUE;
-}
-
-/*-
- *-----------------------------------------------------------------------
- * Job_TokenFlush --
- *	Return free tokens to the pool.
- *
- *-----------------------------------------------------------------------
- */
-
-void
-Job_TokenFlush(void)
-{
-    if (compatMake) return;
-	
-    while (jobTokensFree > 0) {
-	JobTokenAdd();
-	jobTokensFree--;
-    }
 }
 
 #ifdef USE_SELECT

@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.116 2005/08/09 21:36:42 christos Exp $	*/
+/*	$NetBSD: main.c,v 1.119 2006/02/18 04:10:05 tsutsui Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,7 +69,7 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: main.c,v 1.116 2005/08/09 21:36:42 christos Exp $";
+static char rcsid[] = "$NetBSD: main.c,v 1.119 2006/02/18 04:10:05 tsutsui Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,7 +81,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\n\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.116 2005/08/09 21:36:42 christos Exp $");
+__RCSID("$NetBSD: main.c,v 1.119 2006/02/18 04:10:05 tsutsui Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -310,6 +310,7 @@ rearg:
 			    (void)fprintf(stderr,
 				"%s: warning -- J descriptors were closed!\n",
 				progname);
+			    exit(2);
 #endif
 			    job_pipe[0] = -1;
 			    job_pipe[1] = -1;
@@ -408,6 +409,9 @@ rearg:
 					break;
 				case 'n':
 					debug |= DEBUG_SCRIPT;
+					break;
+				case 'p':
+					debug |= DEBUG_PARSE;
 					break;
 				case 's':
 					debug |= DEBUG_SUFF;
@@ -668,6 +672,9 @@ main(int argc, char **argv)
 	static char defsyspath[] = _PATH_DEFSYSPATH;
 	char found_path[MAXPATHLEN + 1];	/* for searching for sys.mk */
 	struct timeval rightnow;		/* to initialize random seed */
+#ifdef MAKE_NATIVE
+	struct utsname utsname;
+#endif
 
 	/*
 	 * Set the seed to produce a different random sequences
@@ -739,8 +746,6 @@ main(int argc, char **argv)
 	 */
 	if (!machine) {
 #ifdef MAKE_NATIVE
-	    struct utsname utsname;
-
 	    if (uname(&utsname) == -1) {
 		(void)fprintf(stderr, "%s: uname failed (%s).\n", progname,
 		    strerror(errno));
@@ -1573,7 +1578,6 @@ Fatal(const char *fmt, ...)
 	va_start(ap, fmt);
 	if (jobsRunning)
 		Job_Wait();
-	Job_TokenFlush();
 
 	(void)vfprintf(stderr, fmt, ap);
 	va_end(ap);

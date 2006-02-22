@@ -1,4 +1,4 @@
-/*	$NetBSD: job.h,v 1.21 2003/12/20 00:18:22 jmc Exp $	*/
+/*	$NetBSD: job.h,v 1.24 2006/01/22 19:54:55 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -276,7 +276,7 @@ extern const char *shellName;
 
 extern int	job_pipe[2];	/* token pipe for jobs. */
 extern int	jobTokensRunning; /* tokens currently "out" */
-extern int	jobTokensFree;	/* tokens free but not yet released to pipe */
+extern int	not_parallel;	/* => only run one job */
 
 #ifdef REMOTE
 extern char 	*targFmt;   	/* Format string for banner that separates
@@ -310,7 +310,6 @@ void Job_Wait(void);
 void Job_AbortAll(void);
 void JobFlagForMigration(int);
 void Job_TokenReturn(void);
-void Job_TokenFlush(void);
 Boolean Job_TokenWithdraw(void);
 void Job_ServerStart(int);
 

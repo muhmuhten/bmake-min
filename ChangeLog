@@ -1,3 +1,13 @@
+2006-02-22  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20060222
+	* Merge with NetBSD make, pick up:
+	  o improved job token handling - dsl
+	  o SIG_DFL the correct signal before exec - dsl
+	  o more debug info during parsing - dsl
+	  o allow variable modifiers to be specified via variable - sjg
+	* boot-strap: explain why we died if no mksrc
+
 2005-11-05  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20051105
