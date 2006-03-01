@@ -1,3 +1,11 @@
+2006-03-01  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20060301
+	* Merge with NetBSD make, pick up:
+	  o make .WAIT apply recursively, document and test case - abp
+	  o allow variable modifiers in a variable appear anywhere in
+	    modifier list, document and test case - sjg
+
 2006-02-22  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20060222
