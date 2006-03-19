@@ -1,3 +1,13 @@
+2006-03-18  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20060318
+	* Merge with NetBSD make, pick up:
+	  o cleanup of job.c to remove remote handling, distcc is more
+	    useful and this code was likely bit-rotting - dsl
+	  o fix for :P modifier - sjg
+	* boot-strap: set default prefix to something reasonable 
+	  (for me anyway). 
+
 2006-03-01  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20060301
