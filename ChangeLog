@@ -1,3 +1,13 @@
+2006-04-12  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20060412
+	* Merge with NetBSD make, pick up:
+	  o fixes for some memory leaks - coverity
+	  o only read first sys.mk etc when searching sysIncPath - sjg
+
+	* main.c (ReadMakefile): remove hack for __INTERIX that prevented
+	setting ${MAKEFILE} - OBATA Akio
+
 2006-03-18  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20060318

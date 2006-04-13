@@ -1,4 +1,4 @@
-/*	$NetBSD: parse.c,v 1.110 2006/02/26 22:45:46 apb Exp $	*/
+/*	$NetBSD: parse.c,v 1.114 2006/03/31 21:58:08 christos Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: parse.c,v 1.110 2006/02/26 22:45:46 apb Exp $";
+static char rcsid[] = "$NetBSD: parse.c,v 1.114 2006/03/31 21:58:08 christos Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)parse.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: parse.c,v 1.110 2006/02/26 22:45:46 apb Exp $");
+__RCSID("$NetBSD: parse.c,v 1.114 2006/03/31 21:58:08 christos Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -1004,14 +1004,12 @@ ParseDoDependency(char *line)
 		 * in the initial Var_Subst and we wouldn't be here.
 		 */
 		int 	length;
-		Boolean	freeIt;
+		void    *freeIt;
 		char	*result;
 
-		result=Var_Parse(cp, VAR_CMD, TRUE, &length, &freeIt);
-
-		if (freeIt) {
-		    free(result);
-		}
+		result = Var_Parse(cp, VAR_CMD, TRUE, &length, &freeIt);
+		if (freeIt)
+		    free(freeIt);
 		cp += length-1;
 	    }
 	    continue;
@@ -1030,7 +1028,7 @@ ParseDoDependency(char *line)
 	    if (Arch_ParseArchive(&line, targets, VAR_CMD) != SUCCESS) {
 		Parse_Error(PARSE_FATAL,
 			     "Error in archive specification: \"%s\"", line);
-		return;
+		goto out;
 	    } else {
 		continue;
 	    }
@@ -1050,7 +1048,7 @@ ParseDoDependency(char *line)
 		    "Makefile appears to contain unresolved cvs/rcs/??? merge conflicts");
 	    else
 		Parse_Error(PARSE_FATAL, "Need an operator");
-	    return;
+	    goto out;
 	}
 	*cp = '\0';
 	/*
@@ -1066,7 +1064,7 @@ ParseDoDependency(char *line)
 	    if (keywd != -1) {
 		if (specType == ExPath && parseKeywords[keywd].spec != ExPath) {
 		    Parse_Error(PARSE_FATAL, "Mismatched special targets");
-		    return;
+		    goto out;
 		}
 
 		specType = parseKeywords[keywd].spec;
@@ -1127,7 +1125,7 @@ ParseDoDependency(char *line)
 			DEFAULT = gn;
 			break;
 		    case NotParallel:
-			not_parallel = 1;
+			maxJobs = 1;
 			break;
 		    case SingleShell:
 			compatMake = TRUE;
@@ -1152,7 +1150,7 @@ ParseDoDependency(char *line)
 		    Parse_Error(PARSE_FATAL,
 				 "Suffix '%s' not defined (yet)",
 				 &line[5]);
-		    return;
+		    goto out;
 		} else {
 		    if (paths == (Lst)NULL) {
 			paths = Lst_Init(FALSE);
@@ -1234,6 +1232,7 @@ ParseDoDependency(char *line)
      * Don't need the list of target names anymore...
      */
     Lst_Destroy(curTargs, NOFREE);
+    curTargs = NULL;
 
     if (!Lst_IsEmpty(targets)) {
 	switch(specType) {
@@ -1271,7 +1270,7 @@ ParseDoDependency(char *line)
 	}
     } else {
 	Parse_Error(PARSE_FATAL, "Missing dependency operator");
-	return;
+	goto out;
     }
 
     cp++;			/* Advance beyond operator */
@@ -1332,7 +1331,7 @@ ParseDoDependency(char *line)
     } else if (specType == ExShell) {
 	if (Job_ParseShell(line) != SUCCESS) {
 	    Parse_Error(PARSE_FATAL, "improper shell specification");
-	    return;
+	    goto out;
 	}
 	*line = '\0';
     } else if ((specType == NotParallel) || (specType == SingleShell)) {
@@ -1446,7 +1445,7 @@ ParseDoDependency(char *line)
 		if (Arch_ParseArchive(&line, sources, VAR_CMD) != SUCCESS) {
 		    Parse_Error(PARSE_FATAL,
 				 "Error in source archive spec \"%s\"", line);
-		    return;
+		    goto out;
 		}
 
 		while (!Lst_IsEmpty (sources)) {
@@ -1480,6 +1479,9 @@ ParseDoDependency(char *line)
 	Lst_ForEach(targets, ParseFindMain, (ClientData)0);
     }
 
+out:
+    if (curTargs)
+	    Lst_Destroy(curTargs, NOFREE);
     /*
      * Finally, destroy the list of sources
      */
@@ -2150,11 +2152,21 @@ ParseTraditionalInclude(char *line)
     cfname  = curFile.fname;
     clineno = curFile.lineno;
 
+    if (DEBUG(PARSE)) {
+	    printf("ParseTraditionalInclude: %s\n", file);
+    }
+
     /*
      * Skip over whitespace
      */
     while (isspace((unsigned char)*file))
 	file++;
+
+    /*
+     * Substitute for any variables in the file name before trying to
+     * find the thing.
+     */
+    file = Var_Subst(NULL, file, VAR_CMD, FALSE);
 
     if (*file == '\0') {
 	Parse_Error(PARSE_FATAL,
@@ -2173,12 +2185,6 @@ ParseTraditionalInclude(char *line)
 	    *cp = '\0';
 	else
 	    done = 1;
-
-	/*
-	 * Substitute for any variables in the file name before trying to
-	 * find the thing.
-	 */
-	file = Var_Subst(NULL, file, VAR_CMD, FALSE);
 
 	/*
 	 * Now we know the file's name, we attempt to find the durn thing.
