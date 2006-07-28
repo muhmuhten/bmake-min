@@ -1,3 +1,11 @@
+2006-07-28  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20060728
+	* Merge with NetBSD make, pick up:
+	  o extra debug info during variable and cond processing - sjg
+	  o shell definition now covers newline - rillig
+	  o minor mem leak in PrintOnError - sjg
+
 2006-05-11  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION):  bump to 20060511
