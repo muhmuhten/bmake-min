@@ -1,3 +1,13 @@
+2007-10-08  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump to 20071008
+	* Merge with NetBSD make, pick up:
+	  o .MAKE.JOB.PREFIX - control the token output before jobs - sjg
+	  o .export/.MAKE.EXPORTED - export of variables - sjg
+	  o .MAKE.MAKEFILES - track all makefiles read - sjg
+	  o performance improvements - dsl
+	  o revamp parallel job scheduling - dsl
+	
 2006-07-28  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20060728

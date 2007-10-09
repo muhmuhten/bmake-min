@@ -1,18 +1,18 @@
-/*	$NetBSD: util.c,v 1.39 2005/08/08 16:42:54 christos Exp $	*/
+/*	$NetBSD: util.c,v 1.40 2007/01/17 00:21:44 hubertf Exp $	*/
 
 /*
  * Missing stuff from OS's
  *
- *	$Id: util.c,v 1.14 2005/09/03 22:13:17 sjg Exp $
+ *	$Id: util.c,v 1.16 2007/10/09 06:09:24 sjg Exp $
  */
 
 #include "make.h"
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: util.c,v 1.39 2005/08/08 16:42:54 christos Exp $";
+static char rcsid[] = "$NetBSD: util.c,v 1.40 2007/01/17 00:21:44 hubertf Exp $";
 #else
 #ifndef lint
-__RCSID("$NetBSD: util.c,v 1.39 2005/08/08 16:42:54 christos Exp $");
+__RCSID("$NetBSD: util.c,v 1.40 2007/01/17 00:21:44 hubertf Exp $");
 #endif
 #endif
 
@@ -90,6 +90,14 @@ setenv(const char *name, const char *value, int dum)
 }
 #endif
 
+#if !defined(HAVE_UNSETENV)
+int
+unsetenv(const char *name)
+{
+	return -1;			/* XXX not worth it? */
+}
+#endif
+
 #if defined(__hpux__) || defined(__hpux)
 /* strrcpy():
  *	Like strcpy, going backwards and returning the new pointer
@@ -145,14 +153,11 @@ char    *sys_siglist[] = {
 
 #if defined(__hpux__) || defined(__hpux)
 #include <sys/types.h>
-#include <sys/param.h>
 #include <sys/syscall.h>
 #include <sys/signal.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <dirent.h>
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
 
 int
@@ -509,4 +514,14 @@ strftime(char *buf, size_t len, const char *fmt, const struct tm *tm)
 		len -= s;
 	}
 }
+#endif
+
+#if !defined(HAVE_KILLPG)
+#if !defined(__hpux__) && !defined(__hpux)
+int
+killpg(int pid, int sig)
+{
+    return kill(-pid, sig);
+}
+#endif
 #endif

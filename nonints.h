@@ -1,4 +1,4 @@
-/*	$NetBSD: nonints.h,v 1.36 2006/03/31 21:58:08 christos Exp $	*/
+/*	$NetBSD: nonints.h,v 1.44 2007/10/05 15:27:45 sjg Exp $	*/
 
 /*-
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -97,7 +97,8 @@ int Compat_Make(ClientData, ClientData);
 /* cond.c */
 int Cond_EvalExpression(int, char *, Boolean *, int);
 int Cond_Eval(char *);
-void Cond_End(void);
+void Cond_restore_depth(unsigned int);
+unsigned int Cond_save_depth(void);
 
 /* for.c */
 int For_Eval(char *);
@@ -115,10 +116,14 @@ void Punt(const char *, ...)
 void DieHorribly(void) __attribute__((__noreturn__));
 int PrintAddr(ClientData, ClientData);
 void Finish(int);
+#ifndef HAVE_EMALLOC
 char *estrdup(const char *);
 void *emalloc(size_t);
 void *erealloc(void *, size_t);
 void enomem(void);
+#else
+#include <util.h>
+#endif
 int eunlink(const char *);
 void execError(const char *, const char *);
 
@@ -129,10 +134,10 @@ Boolean Parse_AnyExport(void);
 Boolean Parse_IsVar(char *);
 void Parse_DoVar(char *, GNode *);
 void Parse_AddIncludeDir(char *);
-void Parse_File(const char *, FILE *);
+void Parse_File(const char *, int);
 void Parse_Init(void);
 void Parse_End(void);
-void Parse_FromString(char *, int);
+void Parse_SetInput(const char *, int, int, char *);
 Lst Parse_MainName(void);
 
 /* str.c */
@@ -177,6 +182,7 @@ char *Targ_FmtTime(time_t);
 void Targ_PrintType(int);
 void Targ_PrintGraph(int);
 void Targ_Propagate(void);
+void Targ_Propagate_Wait(void);
 
 /* var.c */
 void Var_Delete(const char *, GNode *);
@@ -191,3 +197,5 @@ char *Var_GetHead(const char *);
 void Var_Init(void);
 void Var_End(void);
 void Var_Dump(GNode *);
+void Var_ExportVars(void);
+void Var_Export(char *, int);
