@@ -1,3 +1,17 @@
+2007-10-11  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20071011
+	* Merge with NetBSD make, pick up:
+	  o fix Shell_Init for case that _BASENAME_DEFSHELL is absolute path.
+
+	* sigcompat.c: some tweaks for HP-UX 11.x based on 
+	  patch from Tobias Nygren
+
+	* configure.in: update handling of --with-defshell to match
+	  new make behavior.  --with-defshell=/usr/xpg4/bin/sh
+	  will now do what one might hope - provided the chosen shell
+	  behaves enough like sh.
+
 2007-10-08  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump to 20071008

@@ -98,7 +98,7 @@
 
 #if defined(LIBC_SCCS) && !defined(lint)
 /*static char *sccsid = "from: @(#)sigcompat.c	5.3 (Berkeley) 2/24/91";*/
-static char *rcsid = "$Id: sigcompat.c,v 1.17 2005/10/09 22:32:48 sjg Exp $";
+static char *rcsid = "$Id: sigcompat.c,v 1.18 2007/10/11 21:38:15 sjg Exp $";
 #endif				/* LIBC_SCCS and not lint */
 
 #undef signal
@@ -126,14 +126,14 @@ static char *rcsid = "$Id: sigcompat.c,v 1.17 2005/10/09 22:32:48 sjg Exp $";
 #endif
 
 #ifndef MASK_T
-# ifdef __hpux__
+# if defined(__hpux__) || defined(__hpux)
 #   define MASK_T long
 # else
 #   define MASK_T int
 # endif
 #endif
 /* I just hate HPsUX */
-#if defined(__HPUX_VERSION) && __HPUX_VERSION > 9
+#if (defined(__HPUX_VERSION) && __HPUX_VERSION > 9) || defined(__hpux)
 # define  PAUSE_MASK_T int
 #else
 # define PAUSE_MASK_T MASK_T
