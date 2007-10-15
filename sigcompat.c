@@ -89,6 +89,9 @@
 # include "config.h"
 #endif
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #if defined(sun) && !(defined(__svr4__) || defined(__SVR4))
 # define NO_SIGCOMPAT
@@ -98,7 +101,7 @@
 
 #if defined(LIBC_SCCS) && !defined(lint)
 /*static char *sccsid = "from: @(#)sigcompat.c	5.3 (Berkeley) 2/24/91";*/
-static char *rcsid = "$Id: sigcompat.c,v 1.18 2007/10/11 21:38:15 sjg Exp $";
+static char *rcsid = "$Id: sigcompat.c,v 1.19 2007/10/15 05:07:23 sjg Exp $";
 #endif				/* LIBC_SCCS and not lint */
 
 #undef signal

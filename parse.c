@@ -1,4 +1,4 @@
-/*	$NetBSD: parse.c,v 1.137 2007/10/08 20:26:36 sjg Exp $	*/
+/*	$NetBSD: parse.c,v 1.141 2007/10/13 18:28:35 christos Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: parse.c,v 1.137 2007/10/08 20:26:36 sjg Exp $";
+static char rcsid[] = "$NetBSD: parse.c,v 1.141 2007/10/13 18:28:35 christos Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)parse.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: parse.c,v 1.137 2007/10/08 20:26:36 sjg Exp $");
+__RCSID("$NetBSD: parse.c,v 1.141 2007/10/13 18:28:35 christos Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -1745,16 +1745,19 @@ static void
 Parse_include_file(char *file, Boolean isSystem, int silent)
 {
     char          *fullname;	/* full pathname of file */
+    char          *newName;
+    char          *prefEnd, *incdir;
     int           fd;
+    int           i;
 
     /*
      * Now we know the file's name and its search path, we attempt to
      * find the durn thing. A return of NULL indicates the file don't
      * exist.
      */
-    fullname = NULL;
+    fullname = file[0] == '/' ? estrdup(file) : NULL;
 
-    if (!isSystem) {
+    if (fullname == NULL && !isSystem) {
 	/*
 	 * Include files contained in double-quotes are first searched for
 	 * relative to the including file's location. We don't want to
@@ -1762,30 +1765,26 @@ Parse_include_file(char *file, Boolean isSystem, int silent)
 	 * leading path components and call Dir_FindFile to see if
 	 * we can locate the beast.
 	 */
-	char	  *prefEnd, *Fname;
 
-	/* Make a temporary copy of this, to be safe. */
-	Fname = estrdup(curFile->fname);
-
-	prefEnd = strrchr(Fname, '/');
+	incdir = estrdup(curFile->fname);
+	prefEnd = strrchr(incdir, '/');
 	if (prefEnd != NULL) {
-	    char  	*newName;
-
 	    *prefEnd = '\0';
-	    if (file[0] == '/')
-		newName = estrdup(file);
-	    else
-		newName = str_concat(Fname, file, STR_ADDSLASH);
-	    fullname = Dir_FindFile(newName, parseIncPath);
-	    if (fullname == NULL) {
-		fullname = Dir_FindFile(newName, dirSearchPath);
+	    /* Now do lexical processing of leading "../" on the filename */
+	    for (i = 0; strncmp(file + i, "../", 3) == 0; i += 3) {
+		prefEnd = strrchr(incdir + 1, '/');
+		if (prefEnd == NULL || strcmp(prefEnd, "/..") == 0)
+		    break;
+		*prefEnd = '\0';
 	    }
+	    newName = str_concat(incdir, file + i, STR_ADDSLASH);
+	    fullname = Dir_FindFile(newName, parseIncPath);
+	    if (fullname == NULL)
+		fullname = Dir_FindFile(newName, dirSearchPath);
 	    free(newName);
-	    *prefEnd = '/';
-	} else {
-	    fullname = NULL;
 	}
-	free(Fname);
+	free(incdir);
+
         if (fullname == NULL) {
 	    /*
     	     * Makefile wasn't found in same directory as included makefile.
@@ -1820,6 +1819,7 @@ Parse_include_file(char *file, Boolean isSystem, int silent)
     if (fd == -1) {
 	if (!silent)
 	    Parse_Error(PARSE_FATAL, "Cannot open %s", fullname);
+	free(fullname);
 	return;
     }
 
@@ -1920,38 +1920,27 @@ ParseSetParseFile(const char *filename)
  * set dependencies on them.
  * Avoid adding anything more than once.
  */
-#define TRACK_INPUT_FMT "${.PARSEDIR}/${.PARSEFILE}"
 
 static void
 ParseTrackInput(const char *name)
 {
-    char tmp[sizeof(TRACK_INPUT_FMT) + 1];
-    char *val;
     char *old;
-    char *cp;
     char *fp = NULL;
+    size_t name_len = strlen(name);
     
-    strncpy(tmp, TRACK_INPUT_FMT, sizeof(tmp));
-    val = Var_Subst(NULL, tmp, VAR_GLOBAL, 0);
     old = Var_Value(MAKE_MAKEFILES, VAR_GLOBAL, &fp);
     if (old) {
-	/* does it contain val? */
-	if ((cp = strstr(old, val))) {
-	    int n = strlen(val);
-
-	    /*
-	     * It only counts if at the start/end
-	     * or bounded by ' '
-	     */
-	    if ((cp[n] == '\0' || cp[n] == ' ') &&
-		(cp == old || cp[-1] == ' ')) {
-		goto cleanup;		/* we already have it */
-	    }
+	/* does it contain name? */
+	for (; old != NULL; old = strchr(old, ' ')) {
+	    if (*old == ' ')
+		old++;
+	    if (memcmp(old, name, name_len) == 0
+		    && (old[name_len] == 0 || old[name_len] == ' '))
+		goto cleanup;
 	}
     }
-    Var_Append (MAKE_MAKEFILES, val, VAR_GLOBAL);
+    Var_Append (MAKE_MAKEFILES, name, VAR_GLOBAL);
  cleanup:
-    free(val);
     if (fp) {
 	free(fp);
     }
@@ -1976,6 +1965,8 @@ Parse_SetInput(const char *name, int line, int fd, char *buf)
 {
     if (name == NULL)
 	name = curFile->fname;
+    else
+	ParseTrackInput(name);
 
     if (DEBUG(PARSE))
 	fprintf(debug_file, "Parse_SetInput: file %s, line %d, fd %d, buf %p\n",
@@ -2004,7 +1995,6 @@ Parse_SetInput(const char *name, int line, int fd, char *buf)
     curFile->cond_depth = Cond_save_depth();
 
     ParseSetParseFile(name);
-    ParseTrackInput(name);
 
     if (buf == NULL) {
 	/*

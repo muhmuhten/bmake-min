@@ -1,3 +1,16 @@
+2007-10-15  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* boot-strap: make bmake.1 too, so maninstall works.
+
+2007-10-14  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20071014
+	* Merge with NetBSD make, pick up:
+	  o revamped handling of defshell - configure no longer needs to
+	    know the content of the shells array - apb
+	  o stop Var_Subst modifying its input - apb
+	  o avoid calling ParseTrackInput too often - dsl
+
 2007-10-11  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20071011
@@ -64,7 +77,7 @@
 
 	* Makefile.in (BMAKE_VERSION): bump to 20060301
 	* Merge with NetBSD make, pick up:
-	  o make .WAIT apply recursively, document and test case - abp
+	  o make .WAIT apply recursively, document and test case - apb
 	  o allow variable modifiers in a variable appear anywhere in
 	    modifier list, document and test case - sjg
 
