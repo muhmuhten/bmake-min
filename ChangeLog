@@ -1,3 +1,18 @@
+2007-10-22  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20071022
+	* Merge with NetBSD make, pick up:
+	  o Allow .PATH<suffix> to be used for .include ""
+
+	* boot-strap: source default settings from .bmake-boot-strap.rc
+
+2007-10-16  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in: fix maninstall on various systems 
+	  provided that our man.mk is used.
+	  For non-BSD systems we install the preformatted page
+	  into $MANDIR/cat1
+
 2007-10-15  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* boot-strap: make bmake.1 too, so maninstall works.
