@@ -1,4 +1,4 @@
-/*	$NetBSD: job.c,v 1.133 2007/10/14 20:22:53 apb Exp $	*/
+/*	$NetBSD: job.c,v 1.135 2008/01/19 06:52:14 sjg Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -70,14 +70,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: job.c,v 1.133 2007/10/14 20:22:53 apb Exp $";
+static char rcsid[] = "$NetBSD: job.c,v 1.135 2008/01/19 06:52:14 sjg Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)job.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: job.c,v 1.133 2007/10/14 20:22:53 apb Exp $");
+__RCSID("$NetBSD: job.c,v 1.135 2008/01/19 06:52:14 sjg Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -723,7 +723,7 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
     while (*cmd == '@' || *cmd == '-' || (*cmd == '+')) {
 	switch (*cmd) {
 	case '@':
-	    shutUp = TRUE;
+	    shutUp = DEBUG(LOUD) ? FALSE : TRUE;
 	    break;
 	case '-':
 	    errOff = TRUE;
@@ -1235,6 +1235,12 @@ Job_CheckCommands(GNode *gn, void (*abortProc)(const char *, ...))
 	     * this node's parents so they never get examined.
 	     */
 	    static const char msg[] = ": don't know how to make";
+
+	    if (gn->flags & FROM_DEPEND) {
+		fprintf(stdout, "%s: ignoring stale .depend for %s\n",
+			progname, gn->name);
+		return TRUE;
+	    }
 
 	    if (gn->type & OP_OPTIONAL) {
 		(void)fprintf(stdout, "%s%s %s(ignored)\n", progname,

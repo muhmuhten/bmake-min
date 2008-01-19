@@ -1,3 +1,11 @@
+2008-01-18  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20080118
+	* Merge with NetBSD make, pick up:
+	  o consider dependencies read from .depend as optional - dsl
+	  o remember when buffer for reading makefile grows - dsl
+	  o add -dl (aka LOUD) - David O'Brien
+
 2007-10-22  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20071022

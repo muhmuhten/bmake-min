@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.144 2007/10/13 16:16:41 apb Exp $	*/
+/*	$NetBSD: main.c,v 1.146 2008/01/19 06:52:14 sjg Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,7 +69,7 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: main.c,v 1.144 2007/10/13 16:16:41 apb Exp $";
+static char rcsid[] = "$NetBSD: main.c,v 1.146 2008/01/19 06:52:14 sjg Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,7 +81,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\n\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.144 2007/10/13 16:16:41 apb Exp $");
+__RCSID("$NetBSD: main.c,v 1.146 2008/01/19 06:52:14 sjg Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -172,6 +172,7 @@ Boolean			parseWarnFatal;	/* -W flag */
 Boolean			jobServer; 	/* -J flag */
 static int jp_0 = -1, jp_1 = -1;	/* ends of parent job pipe */
 Boolean			varNoExportEnv;	/* -X flag */
+Boolean			doing_depend;	/* Set while reading .depend */
 static Boolean		jobsRunning;	/* TRUE if the jobs might be running */
 static const char *	tracefile;
 #ifndef NO_CHECK_MAKE_CHDIR
@@ -242,6 +243,9 @@ parse_debug_options(const char *argvalue)
 			break;
 		case 'j':
 			debug |= DEBUG_JOB;
+			break;
+		case 'l':
+			debug |= DEBUG_LOUD;
 			break;
 		case 'm':
 			debug |= DEBUG_MAKE;
@@ -1026,8 +1030,11 @@ main(int argc, char **argv)
 		(void)ReadMakefile(UNCONST("Makefile"), NULL);
 
 	/* In particular suppress .depend for '-r -V .OBJDIR -f /dev/null' */
-	if (!noBuiltins || !printVars)
+	if (!noBuiltins || !printVars) {
+		doing_depend = TRUE;
 		(void)ReadMakefile(UNCONST(".depend"), NULL);
+		doing_depend = FALSE;
+	}
 
 	Var_Append("MFLAGS", Var_Value(MAKEFLAGS, VAR_GLOBAL, &p1), VAR_GLOBAL);
 	if (p1)
