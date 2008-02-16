@@ -1,3 +1,14 @@
+2008-02-15  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* merge some patches from NetBSD pkgsrc.
+	
+	* makefile.boot.in (BOOTSTRAP_SYS_PATH): Allow better control of
+	the MAKSYSPATH used during bootstrap. 
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20080215
+	* Merge with NetBSD make, pick up:
+	  o warn if non-space chars follow 'empty' in a conditional.
+
 2008-01-18  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20080118

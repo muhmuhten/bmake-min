@@ -1,4 +1,4 @@
-/*	$NetBSD: arch.c,v 1.53 2006/10/27 21:00:18 dsl Exp $	*/
+/*	$NetBSD: arch.c,v 1.55 2008/02/15 21:29:50 christos Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,14 +69,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: arch.c,v 1.53 2006/10/27 21:00:18 dsl Exp $";
+static char rcsid[] = "$NetBSD: arch.c,v 1.55 2008/02/15 21:29:50 christos Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)arch.c	8.2 (Berkeley) 1/2/94";
 #else
-__RCSID("$NetBSD: arch.c,v 1.53 2006/10/27 21:00:18 dsl Exp $");
+__RCSID("$NetBSD: arch.c,v 1.55 2008/02/15 21:29:50 christos Exp $");
 #endif
 #endif /* not lint */
 #endif

@@ -1,4 +1,4 @@
-/*	$NetBSD: job.h,v 1.34 2007/10/01 22:14:09 sjg Exp $	*/
+/*	$NetBSD: job.h,v 1.37 2008/02/15 21:29:50 christos Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
