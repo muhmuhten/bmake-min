@@ -1,3 +1,9 @@
+2008-03-30  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION):  bump version to 20080330
+	* Merge with NetBSD make, pick up:
+	  o fix for ?= when LHS contains variable reference.
+
 2008-02-15  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* merge some patches from NetBSD pkgsrc.
