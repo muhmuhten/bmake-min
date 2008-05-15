@@ -1,3 +1,20 @@
+2008-05-15  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20080515
+	* Merge with NetBSD make, pick up:
+	  o fix skip setting vars in VAR_GLOBAL context, to handle
+	    cases where VAR_CMD is used for other than command line vars.
+
+2008-05-14  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* boot-strap (make_version): we may need to look in
+	$prefix/share/mk for sys.mk 
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20080514
+	* Merge with NetBSD make, pick up:
+	  o skip setting vars in VAR_GLOBAL context, when already set in
+	  VAR_CMD which takes precedence.
+
 2008-03-30  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION):  bump version to 20080330
