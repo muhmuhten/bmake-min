@@ -1,3 +1,12 @@
+2008-09-27  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20080808
+	* Merge with NetBSD make, pick up:
+	  o fix for PR/38840: Pierre Pronchery: make crashes while parsing
+	    long lines in Makefiles 
+	  o optimizations for VarQuote by joerg
+	  o fix for PR/38756: dominik: make dumps core on invalid makefile
+	
 2008-05-15  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20080515
