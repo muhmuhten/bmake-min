@@ -1,3 +1,19 @@
+2008-10-29  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in: move processing of LIBOBJS to after is definition!
+	  thus we'll have getenv.c in SRCS only if needed.
+
+	* make.1: add examples of how to use :?
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20081029
+	* Merge with NetBSD make, pick up:
+	  o fix for .END processing with -j
+	  o segfault from Parse_Error when no makefile is open
+	  o handle numeric expressions in any variable expansion
+	  o debug output now defaults to stderr, -dF to change it - apb
+	  o make now uses bmake_malloc etc so that it can build natively 
+	    on OS/X - wasn't an issue for bmake, but we want to keep in sync.
+
 2008-09-27  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20080808
