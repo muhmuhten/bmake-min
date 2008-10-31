@@ -1,3 +1,8 @@
+2008-10-30  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20081030
+	  pick up man page tweaks.
+
 2008-10-29  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in: move processing of LIBOBJS to after is definition!
