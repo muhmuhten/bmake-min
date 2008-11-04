@@ -1,3 +1,9 @@
+2008-11-04  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20081101
+	* Merge with NetBSD make, pick up:
+	  o util.c: avoid use of putenv() - christos
+
 2008-10-30  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20081030
