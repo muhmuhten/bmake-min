@@ -1,3 +1,20 @@
+2009-02-26  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20090222
+	* Merge with NetBSD make, pick up:
+	  o Possible null pointer de-ref in Var_Set.
+
+2009-02-08  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (BMAKE_VERSION): bump version to 20090204
+	* Merge with NetBSD make, pick up:
+	  o bmake_malloc et al moved to their own .c
+	  o Count both () and {} when looking for the end of a :M pattern
+	  o Change 'Buffer' so that it is the actual struct, not a pointer to it.
+	  o strlist.c - functions for processing extendable arrays of pointers to strings.
+	  o ClientData replaced with void *, so const void * can be used.
+	  o New debug flag C for DEBUG_CWD
+
 2008-11-11  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20081111

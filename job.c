@@ -1,4 +1,4 @@
-/*	$NetBSD: job.c,v 1.141 2008/10/29 15:37:08 sjg Exp $	*/
+/*	$NetBSD: job.c,v 1.144 2009/01/23 21:26:30 dsl Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990 The Regents of the University of California.
@@ -70,14 +70,14 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: job.c,v 1.141 2008/10/29 15:37:08 sjg Exp $";
+static char rcsid[] = "$NetBSD: job.c,v 1.144 2009/01/23 21:26:30 dsl Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
 #if 0
 static char sccsid[] = "@(#)job.c	8.2 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: job.c,v 1.141 2008/10/29 15:37:08 sjg Exp $");
+__RCSID("$NetBSD: job.c,v 1.144 2009/01/23 21:26:30 dsl Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -197,7 +197,7 @@ int not_parallel = 0;		    /* set if .NOT_PARALLEL */
  * .END target but we keep it around to avoid having to search for it
  * all the time.
  */
-static GNode   	  *postCommands = NILGNODE;
+static GNode   	  *postCommands = NULL;
 				    /* node containing commands to execute when
 				     * everything else is done */
 static int     	  numCommands; 	    /* The number of commands actually printed
@@ -358,8 +358,8 @@ static sigset_t caught_signals;	/* Set of signals we handle */
 static void JobChildSig(int);
 static void JobContinueSig(int);
 static Job *JobFindPid(int, int);
-static int JobPrintCommand(ClientData, ClientData);
-static int JobSaveCommand(ClientData, ClientData);
+static int JobPrintCommand(void *, void *);
+static int JobSaveCommand(void *, void *);
 static void JobClose(Job *);
 static void JobExec(Job *, char **);
 static void JobMakeArgv(Job *, char **);
@@ -674,7 +674,7 @@ JobFindPid(int pid, int status)
  *-----------------------------------------------------------------------
  */
 static int
-JobPrintCommand(ClientData cmdp, ClientData jobp)
+JobPrintCommand(void *cmdp, void *jobp)
 {
     Boolean	  noSpecials;	    /* true if we shouldn't worry about
 				     * inserting special commands into
@@ -907,7 +907,7 @@ JobPrintCommand(ClientData cmdp, ClientData jobp)
  *-----------------------------------------------------------------------
  */
 static int
-JobSaveCommand(ClientData cmd, ClientData gn)
+JobSaveCommand(void *cmd, void *gn)
 {
     cmd = Var_Subst(NULL, (char *)cmd, (GNode *)gn, FALSE);
     (void)Lst_AtEnd(postCommands->commands, cmd);
@@ -1072,7 +1072,7 @@ JobFinish (Job *job, WAIT_T status)
 	 * the parents. In addition, any saved commands for the node are placed
 	 * on the .END target.
 	 */
-	if (job->tailCmds != NILLNODE) {
+	if (job->tailCmds != NULL) {
 	    Lst_ForEachFrom(job->node->commands, job->tailCmds,
 			     JobSaveCommand,
 			    job->node);
@@ -1210,7 +1210,7 @@ Job_CheckCommands(GNode *gn, void (*abortProc)(const char *, ...))
 	 * No commands. Look for .DEFAULT rule from which we might infer
 	 * commands
 	 */
-	if ((DEFAULT != NILGNODE) && !Lst_IsEmpty(DEFAULT->commands) &&
+	if ((DEFAULT != NULL) && !Lst_IsEmpty(DEFAULT->commands) &&
 		(gn->type & OP_SPECIAL) == 0) {
 	    char *p1;
 	    /*
@@ -1519,7 +1519,7 @@ JobStart(GNode *gn, int flags)
 	flags |= JOB_SPECIAL;
 
     job->node = gn;
-    job->tailCmds = NILLNODE;
+    job->tailCmds = NULL;
 
     /*
      * Set the initial value of the flags for this job based on the global
@@ -1655,7 +1655,7 @@ JobStart(GNode *gn, int flags)
 	 * the commands for the job were no good.
 	 */
 	if (cmdsOK && aborting == 0) {
-	    if (job->tailCmds != NILLNODE) {
+	    if (job->tailCmds != NULL) {
 		Lst_ForEachFrom(job->node->commands, job->tailCmds,
 				JobSaveCommand,
 			       job->node);
@@ -1897,7 +1897,7 @@ JobRun(GNode *targ)
     Lst lst = Lst_Init(FALSE);
     Lst_AtEnd(lst, targ);
     (void)Make_Run(lst);
-    Lst_Destroy(lst, NOFREE);
+    Lst_Destroy(lst, NULL);
     JobStart(targ, JOB_SPECIAL);
     while (jobTokensRunning) {
 	Job_CatchOutput();
@@ -2140,7 +2140,7 @@ Job_Init(void)
     aborting = 	  0;
     errors = 	  0;
 
-    lastNode =	  NILGNODE;
+    lastNode =	  NULL;
 
     if (maxJobs == 1) {
 	/*
@@ -2218,7 +2218,7 @@ Job_Init(void)
 
     begin = Targ_FindNode(".BEGIN", TARG_NOCREATE);
 
-    if (begin != NILGNODE) {
+    if (begin != NULL) {
 	JobRun(begin);
 	if (begin->made == ERROR) {
 	    PrintOnError("\n\nStop.");
@@ -2270,7 +2270,7 @@ JobMatchShell(const char *name)
 	if (strcmp(name, sh->name) == 0)
 		return (sh);
     }
-    return (NULL);
+    return NULL;
 }
 
 /*-
@@ -2344,6 +2344,10 @@ Job_ParseShell(char *line)
      * Parse the specification by keyword
      */
     words = brk_string(line, &argc, TRUE, &path);
+    if (words == NULL) {
+	Error("Unterminated quoted string [%s]", line);
+	return FAILURE;
+    }
     shellArgv = path;
 
     for (path = NULL, argv = words; argc != 0; argc--, argv++) {
@@ -2519,7 +2523,7 @@ JobInterrupt(int runINTERRUPT, int signo)
 
     if (runINTERRUPT && !touchFlag) {
 	interrupt = Targ_FindNode(".INTERRUPT", TARG_NOCREATE);
-	if (interrupt != NILGNODE) {
+	if (interrupt != NULL) {
 	    ignoreErrors = FALSE;
 	    JobRun(interrupt);
 	}
@@ -2544,7 +2548,7 @@ JobInterrupt(int runINTERRUPT, int signo)
 int
 Job_Finish(void)
 {
-    if (postCommands != NILGNODE &&
+    if (postCommands != NULL &&
 	(!Lst_IsEmpty(postCommands->commands) ||
 	 !Lst_IsEmpty(postCommands->children))) {
 	if (errors) {
