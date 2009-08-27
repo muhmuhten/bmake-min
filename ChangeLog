@@ -1,3 +1,18 @@
+2009-08-26  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (MAKE_VERSION): bump version to 20090826
+	Simplify MAKE_VERSION to just the bare date.
+	* Merge with NetBSD make, pick up:
+	  o -C directory support.
+	  o support for SIGINFO
+	  o use $TMPDIR for temp files.
+	  o child of vfork should be careful about modifying parent's state.
+	
+
+2009-03-26  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Appy some patches for MiNT from David Brownlee
+
 2009-02-26  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (BMAKE_VERSION): bump version to 20090222

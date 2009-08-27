@@ -96,12 +96,15 @@
 #if defined(sun) && !(defined(__svr4__) || defined(__SVR4))
 # define NO_SIGCOMPAT
 #endif
+#if defined(__MINT__)
+# define NO_SIGCOMPAT
+#endif
 
 #if !defined(NO_SIGCOMPAT) && (defined(HAVE_SIGACTION) || defined(SA_NOCLDSTOP))
 
 #if defined(LIBC_SCCS) && !defined(lint)
 /*static char *sccsid = "from: @(#)sigcompat.c	5.3 (Berkeley) 2/24/91";*/
-static char *rcsid = "$Id: sigcompat.c,v 1.19 2007/10/15 05:07:23 sjg Exp $";
+static char *rcsid = "$Id: sigcompat.c,v 1.20 2009/08/26 23:49:00 sjg Exp $";
 #endif				/* LIBC_SCCS and not lint */
 
 #undef signal

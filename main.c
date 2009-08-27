@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.166 2009/01/24 11:59:39 dsl Exp $	*/
+/*	$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,7 +69,7 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: main.c,v 1.166 2009/01/24 11:59:39 dsl Exp $";
+static char rcsid[] = "$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,7 +81,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.166 2009/01/24 11:59:39 dsl Exp $");
+__RCSID("$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -344,7 +344,7 @@ MainParseArgs(int argc, char **argv)
 	Boolean inOption, dashDash = FALSE;
 	char found_path[MAXPATHLEN + 1];	/* for searching for sys.mk */
 
-#define OPTFLAGS "BD:I:J:NST:V:WXd:ef:ij:km:nqrst"
+#define OPTFLAGS "BC:D:I:J:NST:V:WXd:ef:ij:km:nqrst"
 /* Can't actually use getopt(3) because rescanning is not portable */
 
 	getopt_def = OPTFLAGS;
@@ -394,6 +394,15 @@ rearg:
 		case 'B':
 			compatMake = TRUE;
 			Var_Append(MAKEFLAGS, "-B", VAR_GLOBAL);
+			break;
+		case 'C':
+			if (chdir(argvalue) == -1) {
+				(void)fprintf(stderr,
+					      "%s: chdir %s: %s\n",
+					      progname, argvalue,
+					      strerror(errno));
+				exit(1);
+			}
 			break;
 		case 'D':
 			if (argvalue == NULL || argvalue[0] == 0) goto noarg;
@@ -695,6 +704,22 @@ ReadAllMakefiles(const void *p, const void *q)
 	return (ReadMakefile(p, q) == 0);
 }
 
+#ifdef SIGINFO
+/*ARGSUSED*/
+static void
+siginfo(int signo)
+{
+	char dir[MAXPATHLEN];
+	char str[2 * MAXPATHLEN];
+	int len;
+	if (getcwd(dir, sizeof(dir)) == NULL)
+		return;
+	len = snprintf(str, sizeof(str), "%s: Working in: %s\n", progname, dir);
+	if (len > 0)
+		(void)write(STDERR_FILENO, str, (size_t)len);
+}
+#endif
+
 /*-
  * main --
  *	The main function, for obvious reasons. Initializes variables
@@ -740,6 +765,9 @@ main(int argc, char **argv)
 	/* default to writing debug to stderr */
 	debug_file = stderr;
 
+#ifdef SIGINFO
+	(void)signal(SIGINFO, siginfo);
+#endif
 	/*
 	 * Set the seed to produce a different random sequence
 	 * on each program execution.
@@ -1782,7 +1810,7 @@ execError(const char *af, const char *av)
 	    iov[i].iov_len = strlen(iov[i].iov_base), \
 	    i++)
 #else
-#define	IOADD(void)write(2, s, strlen(s))
+#define	IOADD(s) (void)write(2, s, strlen(s))
 #endif
 
 	IOADD(progname);
@@ -1807,7 +1835,8 @@ static void
 usage(void)
 {
 	(void)fprintf(stderr,
-"usage: %s [-BeikNnqrstWX] [-D variable] [-d flags] [-f makefile]\n\
+"usage: %s [-BeikNnqrstWX] \n\
+            [-C directory] [-D variable] [-d flags] [-f makefile]\n\
             [-I directory] [-J private] [-j max_jobs] [-m directory] [-T file]\n\
             [-V variable] [variable=value] [target ...]\n", progname);
 	exit(2);
