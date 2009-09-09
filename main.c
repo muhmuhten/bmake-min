@@ -1,4 +1,4 @@
-/*	$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $	*/
+/*	$NetBSD: main.c,v 1.174 2009/09/09 17:09:49 sjg Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -69,7 +69,7 @@
  */
 
 #ifndef MAKE_NATIVE
-static char rcsid[] = "$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $";
+static char rcsid[] = "$NetBSD: main.c,v 1.174 2009/09/09 17:09:49 sjg Exp $";
 #else
 #include <sys/cdefs.h>
 #ifndef lint
@@ -81,7 +81,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1989, 1990, 1993\
 #if 0
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 3/19/94";
 #else
-__RCSID("$NetBSD: main.c,v 1.171 2009/08/26 23:17:11 sjg Exp $");
+__RCSID("$NetBSD: main.c,v 1.174 2009/09/09 17:09:49 sjg Exp $");
 #endif
 #endif /* not lint */
 #endif
@@ -182,6 +182,7 @@ static void		MainParseArgs(int, char **);
 static int		ReadMakefile(const void *, const void *);
 static void		usage(void);
 
+static Boolean		ignorePWD;	/* if we use -C, PWD is meaningless */
 static char curdir[MAXPATHLEN + 1];	/* startup directory */
 static char objdir[MAXPATHLEN + 1];	/* where we chdir'ed to */
 char *progname;				/* the program name */
@@ -403,6 +404,7 @@ rearg:
 					      strerror(errno));
 				exit(1);
 			}
+			ignorePWD = TRUE;
 			break;
 		case 'D':
 			if (argvalue == NULL || argvalue[0] == 0) goto noarg;
@@ -792,42 +794,7 @@ main(int argc, char **argv)
 		}
 	}
 #endif
-	/*
-	 * Find where we are and take care of PWD for the automounter...
-	 * All this code is so that we know where we are when we start up
-	 * on a different machine with pmake.
-	 */
-	if (getcwd(curdir, MAXPATHLEN) == NULL) {
-		(void)fprintf(stderr, "%s: %s.\n", progname, strerror(errno));
-		exit(2);
-	}
 
-	if (stat(curdir, &sa) == -1) {
-	    (void)fprintf(stderr, "%s: %s: %s.\n",
-		 progname, curdir, strerror(errno));
-	    exit(2);
-	}
-
-	/*
-	 * Overriding getcwd() with $PWD totally breaks MAKEOBJDIRPREFIX
-	 * since the value of curdir can very depending on how we got
-	 * here.  Ie sitting at a shell prompt (shell that provides $PWD)
-	 * or via subdir.mk in which case its likely a shell which does
-	 * not provide it.
-	 * So, to stop it breaking this case only, we ignore PWD if
-	 * MAKEOBJDIRPREFIX is set or MAKEOBJDIR contains a transform.
-	 */
-#ifndef NO_PWD_OVERRIDE
-	if ((pwd = getenv("PWD")) != NULL && getenv("MAKEOBJDIRPREFIX") == NULL) {
-		const char *makeobjdir = getenv("MAKEOBJDIR");
-
-		if (makeobjdir == NULL || !strchr(makeobjdir, '$')) {
-			if (stat(pwd, &sb) == 0 && sa.st_ino == sb.st_ino &&
-			    sa.st_dev == sb.st_dev)
-				(void)strncpy(curdir, pwd, MAXPATHLEN);
-		}
-	}
-#endif
 	/*
 	 * Get the name of this type of MACHINE from utsname
 	 * so we can share an executable for similar machines.
@@ -870,39 +837,12 @@ main(int argc, char **argv)
 	 */
 	Var_Init();		/* Initialize the lists of variables for
 				 * parsing arguments */
-	Var_Set(".CURDIR", curdir, VAR_GLOBAL, 0);
 	Var_Set("MACHINE", machine, VAR_GLOBAL, 0);
 	Var_Set("MACHINE_ARCH", machine_arch, VAR_GLOBAL, 0);
 #ifdef MAKE_VERSION
 	Var_Set("MAKE_VERSION", MAKE_VERSION, VAR_GLOBAL, 0);
 #endif
 	Var_Set(".newline", "\n", VAR_GLOBAL, 0); /* handy for :@ loops */
-
-	/*
-	 * Find the .OBJDIR.  If MAKEOBJDIRPREFIX, or failing that,
-	 * MAKEOBJDIR is set in the environment, try only that value
-	 * and fall back to .CURDIR if it does not exist.
-	 *
-	 * Otherwise, try _PATH_OBJDIR.MACHINE, _PATH_OBJDIR, and
-	 * finally _PATH_OBJDIRPREFIX`pwd`, in that order.  If none
-	 * of these paths exist, just use .CURDIR.
-	 */
-	Dir_Init(curdir);
-	(void)Main_SetObjdir(curdir);
-
-	if ((path = getenv("MAKEOBJDIRPREFIX")) != NULL) {
-		(void)snprintf(mdpath, MAXPATHLEN, "%s%s", path, curdir);
-		(void)Main_SetObjdir(mdpath);
-	} else if ((path = getenv("MAKEOBJDIR")) != NULL) {
-		(void)Main_SetObjdir(path);
-	} else {
-		(void)snprintf(mdpath, MAXPATHLEN, "%s.%s", _PATH_OBJDIR, machine);
-		if (!Main_SetObjdir(mdpath) && !Main_SetObjdir(_PATH_OBJDIR)) {
-			(void)snprintf(mdpath, MAXPATHLEN, "%s%s", 
-					_PATH_OBJDIRPREFIX, curdir);
-			(void)Main_SetObjdir(mdpath);
-		}
-	}
 
 	create = Lst_Init(FALSE);
 	makefiles = Lst_Init(FALSE);
@@ -923,7 +863,7 @@ main(int argc, char **argv)
 	maxJobs = DEFMAXLOCAL;		/* Set default local max concurrency */
 	maxJobTokens = maxJobs;
 	compatMake = FALSE;		/* No compat mode */
-
+	ignorePWD = FALSE;
 
 	/*
 	 * Initialize the parsing, directory and variable modules to prepare
@@ -950,7 +890,12 @@ main(int argc, char **argv)
 	 */
 	{
 	    char tmp[64];
+	    const char *ep;
 
+	    if (!(ep = getenv(MAKE_LEVEL))) {
+		ep = "0";
+	    }
+	    Var_Set(MAKE_LEVEL, ep, VAR_GLOBAL, 0);
 	    snprintf(tmp, sizeof(tmp), "%u", getpid());
 	    Var_Set(".MAKE.PID", tmp, VAR_GLOBAL, 0);
 	    snprintf(tmp, sizeof(tmp), "%u", getppid());
@@ -970,6 +915,72 @@ main(int argc, char **argv)
 #endif
 
 	MainParseArgs(argc, argv);
+
+	/*
+	 * Find where we are (now) and take care of PWD for the automounter...
+	 * All this code is so that we know where we are when we start up
+	 * on a different machine with pmake.
+	 */
+	if (getcwd(curdir, MAXPATHLEN) == NULL) {
+		(void)fprintf(stderr, "%s: %s.\n", progname, strerror(errno));
+		exit(2);
+	}
+
+	if (stat(curdir, &sa) == -1) {
+	    (void)fprintf(stderr, "%s: %s: %s.\n",
+		 progname, curdir, strerror(errno));
+	    exit(2);
+	}
+
+	/*
+	 * Overriding getcwd() with $PWD totally breaks MAKEOBJDIRPREFIX
+	 * since the value of curdir can vary depending on how we got
+	 * here.  Ie sitting at a shell prompt (shell that provides $PWD)
+	 * or via subdir.mk in which case its likely a shell which does
+	 * not provide it.
+	 * So, to stop it breaking this case only, we ignore PWD if
+	 * MAKEOBJDIRPREFIX is set or MAKEOBJDIR contains a transform.
+	 */
+#ifndef NO_PWD_OVERRIDE
+	if (!ignorePWD &&
+	    (pwd = getenv("PWD")) != NULL &&
+	    getenv("MAKEOBJDIRPREFIX") == NULL) {
+		const char *makeobjdir = getenv("MAKEOBJDIR");
+
+		if (makeobjdir == NULL || !strchr(makeobjdir, '$')) {
+			if (stat(pwd, &sb) == 0 && sa.st_ino == sb.st_ino &&
+			    sa.st_dev == sb.st_dev)
+				(void)strncpy(curdir, pwd, MAXPATHLEN);
+		}
+	}
+#endif
+	Var_Set(".CURDIR", curdir, VAR_GLOBAL, 0);
+
+	/*
+	 * Find the .OBJDIR.  If MAKEOBJDIRPREFIX, or failing that,
+	 * MAKEOBJDIR is set in the environment, try only that value
+	 * and fall back to .CURDIR if it does not exist.
+	 *
+	 * Otherwise, try _PATH_OBJDIR.MACHINE, _PATH_OBJDIR, and
+	 * finally _PATH_OBJDIRPREFIX`pwd`, in that order.  If none
+	 * of these paths exist, just use .CURDIR.
+	 */
+	Dir_Init(curdir);
+	(void)Main_SetObjdir(curdir);
+
+	if ((path = getenv("MAKEOBJDIRPREFIX")) != NULL) {
+		(void)snprintf(mdpath, MAXPATHLEN, "%s%s", path, curdir);
+		(void)Main_SetObjdir(mdpath);
+	} else if ((path = getenv("MAKEOBJDIR")) != NULL) {
+		(void)Main_SetObjdir(path);
+	} else {
+		(void)snprintf(mdpath, MAXPATHLEN, "%s.%s", _PATH_OBJDIR, machine);
+		if (!Main_SetObjdir(mdpath) && !Main_SetObjdir(_PATH_OBJDIR)) {
+			(void)snprintf(mdpath, MAXPATHLEN, "%s%s", 
+					_PATH_OBJDIRPREFIX, curdir);
+			(void)Main_SetObjdir(mdpath);
+		}
+	}
 
 	/*
 	 * Be compatible if user did not specify -j and did not explicitly
@@ -1610,7 +1621,9 @@ Cmd_Exec(const char *cmd, const char **errnum)
 	if (cc == 0)
 	    *errnum = "Couldn't read shell's output for \"%s\"";
 
-	if (WAIT_STATUS(status))
+	if (WIFSIGNALED(status))
+	    *errnum = "\"%s\" exited on a signal";
+	else if (WEXITSTATUS(status) != 0)
 	    *errnum = "\"%s\" returned non-zero status";
 
 	/*
