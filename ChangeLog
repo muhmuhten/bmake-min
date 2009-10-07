@@ -1,3 +1,10 @@
+2009-10-07  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (MAKE_VERSION): bump version to 200910007
+	* Merge with NetBSD make, pick up:
+	  o fix for parsing of :S;...;...; applied to .for loop iterator
+	    appearing in a dependency line. 
+	
 2009-09-09  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (MAKE_VERSION): bump version to 20090909
