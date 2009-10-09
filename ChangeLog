@@ -1,3 +1,7 @@
+2009-10-09  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (MAKE_VERSION): fix version to 20091007
+
 2009-10-07  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (MAKE_VERSION): bump version to 200910007
