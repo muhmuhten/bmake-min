@@ -1,3 +1,15 @@
+2009-11-18  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* Makefile.in (MAKE_VERSION): bump version to 20091118
+	* Merge with NetBSD make, pick up:
+	  o .unexport
+	  o report lines that start with '.' and should have ':'
+	    (catch typo's of .el*if).
+	
+2009-10-30  Simon J. Gerraty  <sjg@void.crufty.net>
+
+	* configure.in: Ensure that srcdir and mksrc are absolute paths.
+
 2009-10-09  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (MAKE_VERSION): fix version to 20091007
