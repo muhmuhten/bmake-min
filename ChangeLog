@@ -1,3 +1,9 @@
+2010-01-04  Simon J. Gerraty  <sjg@bad.crufty.net>
+
+	* Makefile.in (MAKE_VERSION): bump version to 20100102
+	* Merge with NetBSD make, pick up:
+	  o fix for -m .../
+
 2009-11-18  Simon J. Gerraty  <sjg@void.crufty.net>
 
 	* Makefile.in (MAKE_VERSION): bump version to 20091118
