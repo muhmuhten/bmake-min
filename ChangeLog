@@ -1,3 +1,10 @@
+2017-11-18  Simon J. Gerraty  <sjg@bad.crufty.net>
+
+	* VERSION: 20171118
+	  Merge with NetBSD make, pick up
+	  o var.c: do not append to variable set on command line
+	    add unit-test to catch this.
+
 2017-10-28  Simon J. Gerraty  <sjg@bad.crufty.net>
 
 	* VERSION: 20171028
