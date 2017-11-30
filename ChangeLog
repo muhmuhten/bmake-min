@@ -1,3 +1,11 @@
+2017-11-26  Simon J. Gerraty  <sjg@bad.crufty.net>
+
+	* VERSION (_MAKE_VERSION): 20171126
+
+	* aclocal.m4: use AC_LINK_IFELSE for AC_C___ATTRIBUTE__
+	  since AC_TRY_COMPILE puts input inside main()
+	  which upsets modern compilers.
+
 2017-11-18  Simon J. Gerraty  <sjg@bad.crufty.net>
 
 	* VERSION: 20171118
