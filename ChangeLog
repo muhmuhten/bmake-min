@@ -1,3 +1,11 @@
+2017-12-07  Simon J. Gerraty  <sjg@bad.crufty.net>
+
+	* VERSION: 20171207
+	  Merge with NetBSD make, pick up
+	  o var.c: Var_Append use Var_Set if var not previously set
+	    so that VAR_CMD is handled correctly.
+	    Add a suitable unit-test.
+
 2017-11-26  Simon J. Gerraty  <sjg@bad.crufty.net>
 
 	* VERSION (_MAKE_VERSION): 20171126
