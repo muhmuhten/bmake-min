@@ -1,0 +1,75 @@
+=head1 bmake-min
+
+L<bmake|http://crufty.net/help/sjg/bmake.html> reduced to the code and just
+enough of a Makefile to build it on a reasonably POSIX system, suitable for
+inclusion in-tree as a build system component not requiring installation.
+
+In particular, this distribution omits:
+
+=over 2
+
+=item * Documentation. Sorry. You'll have to make do with
+L<a web edition of man 1 make|https://man.openbsd.org/NetBSD-7.1/make.1>.
+They took up a lot of space in the original distribution, and there were three
+copies of basically the same manpage, and the de Boor is woefully outdated.
+
+=item * Unit tests. If you need to run the tests, you should probably download
+L<a full distribution|https://ftp.netbsd.org/pub/NetBSD/misc/sjg/>.
+
+=item * Autoconf and associated cruft. Probably what you're here for: bmake is
+easier to integrate without it.
+
+=item * mk-files. This bmake searches relative paths for F<sys.mk> &c., so you
+can vendor a set of mk-files separately.
+
+=back
+
+=head2 Motivation
+
+F<configure> reliably takes longer than the actual build itself, and then the
+stock build system is a shell script that compiles each file serially.
+
+And to be totally fair, it I<makes sense> for basic infrastructure like bmake
+to be scrupulously portable, much more than for the average autoconf consumer,
+since it could actually be useful in bootstrapping up from a premodern system,
+but I<practically>,
+
+=over 2
+
+=item * You're probably working on a "POSIX enough" system; and if you don't,
+you already know it because every other program needs some tweaking too.
+
+=item * You probably *do* already have a C<make> (but it's probably GNU make).
+
+=item * Needless ports of nonstandard library functions don't hurt that much.
+
+=back
+
+Even if it doesn't build in your environment, you can probably fall back on the
+full autotools-based distribution, which is almost certainly more portable than
+the software you're building anyway.
+
+As for why you'd want to use it, BSD-style make provides a solid foundation for
+a medium-sized project's build system. With a metaprogramming layer that isn't
+a total Turing tarpit beyond C<$(wildcard ...)>, you don't need to I<generate>
+Makefile text, because it's feasible to just write the logic in the Makefile.
+
+=head2 Limitations
+
+We make a few more assumptions than POSIX:
+
+=over 2
+
+=item * The F<Makefile> assumes C<?=> and C<+=> work. This is true of both GNU
+make and pmake descendants (including bmake itself), but not standardized.
+
+=item * The nonstandard system header F<sys/cdefs.h> is required, though not
+really I<used> for anything since we define C<__RCSID()> &c. away.
+
+=item * Older versions (before 20100222) depend on the system header F<ar.h>.
+
+=back
+
+=head2 Licenses
+
+See individual files for details.
