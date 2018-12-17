@@ -1,3 +1,9 @@
+2018-12-16  Simon J Gerraty  <sjg@beast.crufty.net>
+
+	* VERSION: 20181216
+	  Merge with NetBSD make, pick up
+	  o fix for unit-tests/varquote.mk on Debian
+
 2018-09-21  Simon J. Gerraty  <sjg@bad.crufty.net>
 
 	* VERSION: 20180919
