@@ -54,9 +54,11 @@ a medium-sized project's build system. With a metaprogramming layer that isn't
 a total Turing tarpit beyond C<$(wildcard ...)>, you don't need to I<generate>
 Makefile text, because it's feasible to just write the logic in the Makefile.
 
-=head2 Limitations
+=head2 Caveats
 
-We make a few more assumptions than POSIX:
+A lot of the dates in the repository are totally fabricated.
+
+Also, we make a few more assumptions than POSIX:
 
 =over 2
 
