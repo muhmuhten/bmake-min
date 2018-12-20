@@ -35,7 +35,9 @@
 
 char *stresep(char **stringp, const char *delim, int esc);
 
-#ifndef USE_FILEMON
+#include <filemon.h>
+#include <dev/filemon/filemon.h>
+#ifndef FILEMON_SET_FD
 #define meta_job_child(x) meta_job_child()
 #endif
 
