@@ -63,8 +63,11 @@ We make a few more assumptions than POSIX:
 =item * The F<Makefile> assumes C<?=> and C<+=> work. This is true of both GNU
 make and pmake descendants (including bmake itself), but not standardized.
 
-=item * The nonstandard system header F<sys/cdefs.h> is required, though not
-really I<used> for anything since we define C<__RCSID()> &c. away.
+=item * If the non-standard header F<sys/cdefs.h> is required by other system
+headers, then it must exist at F</usr/include/sys/cdefs.h>, and if that file
+exists it must define the C<__CONCAT> and C<__STRING> macros. No workaround is
+provided for C compilers which do not pretend to be GCC, or do so poorly. This
+is arguably a bug in bmake. You may need to fix the files under F<missing/>.
 
 =item * Older versions (before 20100222) depend on the system header F<ar.h>.
 
