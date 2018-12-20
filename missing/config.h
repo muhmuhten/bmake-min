@@ -38,3 +38,8 @@ char *stresep(char **stringp, const char *delim, int esc);
 #ifndef USE_FILEMON
 #define meta_job_child(x) meta_job_child()
 #endif
+
+#include <string.h>
+#ifdef strsep
+#define HAVE_STRSEP
+#endif
